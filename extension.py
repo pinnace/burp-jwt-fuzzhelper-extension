@@ -30,8 +30,16 @@ from javax.swing import JTextField;
 from javax.swing import JTextArea;
 from javax.swing.table import AbstractTableModel;
 import jwt
+import hashlib
+import hmac
+import md5
+import base64
+import ast
+import mock
 import re
 import json
+from collections import OrderedDict
+from jwt.utils import *
 
 # Insets: https://docs.oracle.com/javase/7/docs/api/java/awt/Insets.html
 
@@ -49,6 +57,8 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
                                 "algorithm" : "HS256",
                                 "key" : ""
                             }
+
+        self._isNone = lambda val: isinstance(val, type(None))
 
         # Configuration panel Layout
         self._configurationPanel = JPanel()
@@ -167,7 +177,7 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         c.anchor = GridBagConstraints.LINE_END
         self._configurationPanel.add(signatureAlgorithmLabel,c)
 
-        options = ["None","HS256","HS384","HS512","ES256","ES384","ES512","RS256","RS384","RS512","PS256","PS256","PS384","PS512"]
+        options = ["None", "HS256","HS384","HS512","ES256","ES384","ES512","RS256","RS384","RS512","PS256","PS256","PS384","PS512"]
         self._algorithmSelectionComboBox = JComboBox(options)
         c = GridBagConstraints()
         c.gridx = 1
@@ -216,83 +226,102 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         dataParameter = self._helpers.bytesToString(
                          self._helpers.urlDecode(baseValue)
                        )
+
+        header,payload,signature = [unicode(s).encode('utf-8') for s in dataParameter.split(".",3)]
+        decoded_header = self._helpers.bytesToString(self._helpers.base64Decode(header + "="))
+        decoded_payload = self._helpers.bytesToString(self._helpers.base64Decode(payload+"="))
+
+        header_dict = json.loads(decoded_header, object_pairs_hook=OrderedDict)
+        payload_dict = json.loads(decoded_payload, object_pairs_hook=OrderedDict)
         
-        header = jwt.get_unverified_header(dataParameter)
-        payload = jwt.decode(dataParameter, verify=False)
-        signature = dataParameter.split(".")[2] # Never decode this
 
-
-        target = header if self._fuzzoptions["target"] == "Header" else payload
+        target = header_dict if self._fuzzoptions["target"] == "Header" else payload_dict
         selector = self._fuzzoptions["selector"]
 
-        """
-        Retrieve the value specified by the selector, 
-        if this value does not exist, assume the user
-        wants to add the value that would have been specified
-        by the selector to the dictionary (this behavior will 
-        be noted in the help docs)
-        """
+        # Retrieve the value specified by the selector, 
+        # if this value does not exist, assume the user
+        # wants to add the value that would have been specified
+        # by the selector to the dictionary (this behavior will 
+        # be noted in the help docs)
         try:
             value = self.getValue(target, selector)
-        except:
+        except Exception:
             target = self.buildDict(target, selector)
 
-        # Insert the intruder payload if the selector is valid
-        if !isinstance(selector,type(None)):
-            target = self.setValue(target, selector, self._helpers.bytesToString(currentPayload))
+        if not self._isNone(selector):
+            intruderPayload = self._helpers.bytesToString(currentPayload) 
+            target = self.setValue(target, selector, intruderPayload)
+        
+        
 
-        # If the user wants to sign the data
-        #   This WILL update the header algo
+        algorithm = self._fuzzoptions["algorithm"]
+        if self._fuzzoptions["signature"]: 
+            # pyjwt requires lowercase 'none'. If user wants to try
+            # "none", "NonE", "nOnE", etc... they should use .alg
+            # as selector, delete sig from intruder and use those
+            # permutations as their fuzz list (outlined in help docs)
+            # and keep "Generate Signature" as False
+            algorithm = "none" if algorithm.lower() == "none" else algorithm
+            header_dict["alg"] = algorithm
 
-        modified_jwt = ""
+        header = json.dumps(header_dict, separators=(",",":"))
+        payload = json.dumps(payload_dict, separators=(",",":"))
+        header = self._helpers.base64Encode(header).strip("=")
+        payload = self._helpers.base64Encode(payload).strip("=")
+
+        contents = header + "." + payload
+        m = md5.new()
+        m.update(contents)
+        print "Contents MD5: ",base64.b64encode(m.digest())
+
+        
+        key = self._fuzzoptions["key"]
         if self._fuzzoptions["signature"]:
-            header["alg"] = self._fuzzoptions["algorithm"]
-            modified_jwt = jwt.encode(
-                    payload,
-                    self._fuzzoptions["key"],
-                    algorithm=self._fuzzoptions["algorithm"],
-                    headers=header
-                    )
-        # Put the JWT back together
-        else:
-            encoded_header = self._helpers.base64Encode(
-                                        self._helpers.stringToBytes(json.dumps(header))
-                                    )
-            encoded_payload = self._helpers.base64Encode(
-                                        self._helpers.stringToBytes(json.dumps(payload))
-                                    )
-
-            encoded_header = encoded_header.replace('=','')
-            encoded_payload = encoded_payload.replace('=','')
-
-            encoded_header = self._helpers.urlEncode(encoded_header)
-            encoded_payload = self._helpers.urlEncode(encoded_payload)
+            # pyjwt throws error when using a public key in symmetric alg (for good reason of course),
+            # must do manually
+            if algorithm.startswith("HS"):
+                if algorithm == "HS256":
+                    hmac_algorithm = hashlib.sha256
+                elif algorithm == "HS384":
+                    hmac_algorithm = hashlib.sha384
+                else:
+                    hmac_algorithm = hashlib.sha512
             
-            modified_jwt = encoded_header + "." + encoded_payload + "." + signature
+                print "Using algorithm: ",algorithm
+                signature = self._helpers.base64Encode(
+                            hmac.new(
+                                    key, contents, hmac_algorithm
+                                ).digest()
+                    ).strip("=")
 
-        print "Header: ",header
-        print "Payload: ",payload
-        print modified_jwt
+                modified_jwt = contents + "." +signature
+            else:
+                # Use pyjwt when using asymmetric alg
+                if algorithm == "none":
+                    key = ""
+                modified_jwt = jwt.encode(payload_dict,key,algorithm=algorithm,headers=header_dict)
+        else:
+            modified_jwt = contents + "." + signature
 
         return self._helpers.stringToBytes(modified_jwt)
 
-    #-----------------------
-    # Helpers
-    #-----------------------
-
+    
     #-----------------------
     # getValue:
     #   @return: A value at arbitrary depth in dictionary
     #   @throws: TypeError
     #-----------------------
     def getValue(self, dictionary, values):
-        return reduce(dict.__getitems__, values, dictionary)
+        return reduce(dict.__getitem__, values, dictionary)
 
     #-----------------------
     # buildDict:
     #   @note: Will build dictionary of arbitrary depth
     #-----------------------
     def buildDict(self, dictionary, keys):
+        if self._isNone(keys):
+            return dictionary
+
         root = current = dictionary
         for key in keys:
             if key not in current:
@@ -336,13 +365,14 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
     #---------------------------
 
     def saveOptions(self,event):
-        print "Saving!"
+        print "Saving! "
         self._fuzzoptions["target"]     = self._targetComboBox.getSelectedItem()
         self._fuzzoptions["selector"]   = self._selectorTextField.getText()
         self._fuzzoptions["signature"]  = True if self._generateSignatureComboBox.getSelectedItem() == "True" else False
         self._fuzzoptions["algorithm"]  = self._algorithmSelectionComboBox.getSelectedItem()
-        self._fuzzoptions["key"]        = self._signingKeyTextArea.getText()
-
+        self._fuzzoptions["key"]        = unicode(self._signingKeyTextArea.getText()).encode("utf-8")
+        #self._fuzzoptions["key"]        = self._signingKeyTextArea.getText()
+        print self._fuzzoptions
         # Sanity check selector
         m = re.search("(\.\w+)+",self._fuzzoptions["selector"])
         if isinstance(m,type(None)) or m.group(0) != self._fuzzoptions["selector"]:
