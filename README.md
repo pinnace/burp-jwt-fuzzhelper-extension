@@ -4,7 +4,7 @@
 
 This extension requires you to have Jython installed.
 
-The HS* class of signature algorithms (ie. HS256, HS384, and HS512) are implemented using native Python libraries. The RS* and PS* class of signatures are generate via the [pyjwt](https://pyjwt.readthedocs.io/en/latest/) library. Since pyjwt relies on Python `cryptography` libs and these libs cannot be installed via Jython, you will need to specify a folder for loading native Python modules in Extender -> Options -> Python Environment. 
+The HS* class of signature algorithms (ie. HS256, HS384, and HS512) are implemented using native Python libraries. The RS* and PS* class of signatures are generated via the [pyjwt](https://pyjwt.readthedocs.io/en/latest/) library. Since pyjwt relies on Python `cryptography` libs and these libs cannot be installed via Jython, you will need to specify a folder for loading native Python modules in Extender -> Options -> Python Environment. 
 
 ## Installation
 
@@ -35,10 +35,32 @@ You can invoke the extension in the Intruder tab by invoking it in the payload p
 
 ### **Important**
 
-1. You must disable payload encoding for the `.` character in Intruder options, or they will be URL encoded.
+1. You must **disable** payload encoding for the `.` character in Intruder options, or they will be URL encoded.
 
 ![payload_encoding](https://github.com/cle0patra/burp-jwt-extension-images/blob/master/payload_encoding.png)
 
+## Configuring the fuzzer options
+
+This fuzzer uses [jq's Object Identifier-Index](https://stedolan.github.io/jq/manual/#Basicfilters) to select fields for fuzzing.
+
+#### Example: Fuzzing `alg`
+
+If you wanted to fuzz the `alg` field, you would use "Header" for your target selection and `.alg` as your selector
+
+![alg_selector](https://github.com/cle0patra/burp-jwt-extension-images/blob/master/alg_selector.png)
+
+#### Example: Fuzzing nested claims
+
+Say you want to fuzz the _role_ claim in the following claim. You would use `.user.role` as your selector.
+
+```json
+"user" : { 
+       "username" : "john.doe", 
+       "role" : "admin" 
+    } 
+```
+
+## Fuzzing examples
 
 ### Example 3: `kid` parameter fuzzing
 
