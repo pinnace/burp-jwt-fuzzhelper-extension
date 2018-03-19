@@ -16,6 +16,10 @@ $ pip install -r requirements.txt
 
 #### Install the extension.
 
+You can do this in the extender pane
+
+![alt text](https://raw.githubusercontent.com/cle0patra/burp-jwt-extension-images/blob/master/install_extension.png)
+
 
 
 ### Example 3: `kid` parameter fuzzing
