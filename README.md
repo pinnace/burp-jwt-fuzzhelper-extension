@@ -18,8 +18,26 @@ $ pip install -r requirements.txt
 
 You can do this in the extender pane
 
-![alt text](https://github.com/cle0patra/burp-jwt-extension-images/blob/master/install_extension.png)
+![install_extension](https://github.com/cle0patra/burp-jwt-extension-images/blob/master/install_extension.png)
 
+
+## Usage
+
+You can invoke the extension in the Intruder tab by invoking it in the payload processor pane
+
+![payload_processing](https://github.com/cle0patra/burp-jwt-extension-images/blob/master/payload_processing.png)
+
+![payload_processing_rule](https://github.com/cle0patra/burp-jwt-extension-images/blob/master/payload_processing_rule.png)
+
+![processing_rule](https://github.com/cle0patra/burp-jwt-extension-images/blob/master/processing_rule.png)
+
+![invoke_processor](https://github.com/cle0patra/burp-jwt-extension-images/blob/master/invoke_processor.png)
+
+### **Important**
+
+1. You must disable payload encoding for the `.` character in Intruder options, or they will be URL encoded.
+
+![payload_encoding](https://github.com/cle0patra/burp-jwt-extension-images/blob/master/payload_encoding.png)
 
 
 ### Example 3: `kid` parameter fuzzing
