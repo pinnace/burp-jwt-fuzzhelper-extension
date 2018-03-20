@@ -22,7 +22,7 @@ $ pip install -r requirements.txt
 
 You can do this in the extender pane
 
-![install_extension](https://github.com/cle0patra/burp-jwt-extension-images/blob/master/install_extension.png)
+![install_extension](https://github.com/cle0patra/burp-jwt-extension-images/blob/master/install_extension.png){:height="50%" width="50%"}
 
 
 ## Usage
