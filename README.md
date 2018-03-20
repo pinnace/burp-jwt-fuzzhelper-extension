@@ -95,7 +95,7 @@ To exploit this using the fuzzer you would do the following:
 
 ### Tip: `\n`
 
-If you find you are not getting expected results, try appending a line break character, `\n`, to your key.
+If you find you are not getting expected results, try appending a line break character, `\n`, to your key (i.e. hit enter).
 
 ### Limitations
 
