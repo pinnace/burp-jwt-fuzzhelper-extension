@@ -22,28 +22,26 @@ $ pip install -r requirements.txt
 
 You can do this in the extender pane
 
-![install_extension](https://github.com/cle0patra/burp-jwt-extension-images/blob/master/install_extension.png)
-
-<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/install_extension.png" width="50%" height="50%">
+<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/install_extension.png" width="75%" height="75%">
 
 
 ## Usage
 
 You can invoke the extension in the Intruder tab by invoking it in the payload processor pane
 
-![payload_processing](https://github.com/cle0patra/burp-jwt-extension-images/blob/master/payload_processing.png)
+<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/payload_processing.png" width="75%" height="75%">
 
-![payload_processing_rule](https://github.com/cle0patra/burp-jwt-extension-images/blob/master/payload_processing_rule.png)
+<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/payload_processing_rule.png" width="75%" height="75%">
 
-![processing_rule](https://github.com/cle0patra/burp-jwt-extension-images/blob/master/processing_rule.png)
+<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/processing_rule.png" width="75%" height="75%">
 
-![invoke_processor](https://github.com/cle0patra/burp-jwt-extension-images/blob/master/invoke_processor.png)
+<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/invoke_processor.png" width="75%" height="75%">
 
 ### **Important**
 
 1. You must **disable** payload encoding for the `.` character in Intruder options, or they will be URL encoded.
 
-![payload_encoding](https://github.com/cle0patra/burp-jwt-extension-images/blob/master/payload_encoding.png)
+<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/payload_encoding.png" width="75%" height="75%">
 
 ## Configuring the fuzzer options
 
@@ -53,7 +51,7 @@ This fuzzer uses [jq's Object Identifier-Index](https://stedolan.github.io/jq/ma
 
 If you wanted to fuzz the `alg` field, you would use "Header" for your target selection and `.alg` as your selector
 
-![alg_selector](https://github.com/cle0patra/burp-jwt-extension-images/blob/master/alg_selector.png)
+<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/alg_selector.png" width="75%" height="75%">
 
 #### Example: Fuzzing nested claims
 
@@ -84,11 +82,11 @@ To exploit this using the fuzzer you would do the following:
 4. Dump the known file contents into the **Signing Key** text field
 5. Hit save
 
-![kid_config](https://github.com/cle0patra/burp-jwt-extension-images/blob/master/kid_config.png) 
+<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/kid_config.png" width="75%" height="75%">
 
 6. Add your fuzz list
 
-![kid_payload](https://github.com/cle0patra/burp-jwt-extension-images/blob/master/kid_payload.png) 
+<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/kid_payload.png" width="75%" height="75%">
 
 7. Run Intruder
 8. Victory dance
