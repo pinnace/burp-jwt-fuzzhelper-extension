@@ -66,13 +66,13 @@ Say you want to fuzz the _role_ claim in the following claim. You would use `.us
 
 ## Fuzzing examples
 
-### Example 3: `kid` parameter fuzzing
+### Example 3: `kid` claim fuzzing
 
-[Bitcoin CTF](https://bitcoinctf.com) had a challenge last year involving an improperly handled `kid` field. 
+[Bitcoin CTF](https://bitcoinctf.com) had a challenge last year involving an improperly handled `kid` field. Here's how this extension could help you attack that.
 
-Looking at [RFC7515](https://tools.ietf.org/html/rfc7515#section-4.1.4), we can see that the `kid` value is an optional claim field in the header section of a JWT token providing a 'hint' to the operator as to which key was used to sign the token. This is useful if multiple keys are used. Implementation itself is unspecified and up to the operator. Since the `kid` parameter may, and often is, parsed before verifying the signature and implementation itself is up to the operator, this field presents a new attack vector.
+Looking at [RFC7515](https://tools.ietf.org/html/rfc7515#section-4.1.4), we can see that the `kid` (key id) value is an optional claim field in the header section of a JWT token providing a 'hint' to the operator as to which key was used to sign the token. This is useful if multiple keys are used. Implementation itself is unspecified and up to the operator. Since the `kid` parameter may, and often is, parsed before verifying the signature and implementation itself is up to the operator, this field presents a possible attack vector.
 
-In the Bitcoin CTF, the `kid` field turned out to be a filename the user could specify. By specifying a CSS or JS file with known contents and manipulating the algorithm, they could generate a valid token. To test this with this fuzzer, one could do the following:
+In the Bitcoin CTF, the `kid` field turned out to be a filename under control of the user. By specifying a CSS or JS file with known contents and manipulating the algorithm, they could generate a valid token. To test this with this fuzzer, one could do the following:
 
 To exploit this using the fuzzer you would do the following:
 
@@ -80,15 +80,16 @@ To exploit this using the fuzzer you would do the following:
 2. Set **Generate Signature?** to "True"
 3. Select the signature algorithm, in this case HS256
 4. Dump the known file contents into the **Signing Key** text field
+5. Hit save
 
 ![kid_config](https://github.com/cle0patra/burp-jwt-extension-images/blob/master/kid_config.png) 
 
-5. Add your fuzz list
+6. Add your fuzz list
 
 ![kid_payload](https://github.com/cle0patra/burp-jwt-extension-images/blob/master/kid_payload.png) 
 
-6. Run Intruder
-7. Victory dance
+7. Run Intruder
+8. Victory dance
 
 ## Tips and limitations
 
