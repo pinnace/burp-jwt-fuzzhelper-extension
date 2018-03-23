@@ -20,7 +20,6 @@ from javax.swing import ImageIcon;
 from javax.swing import JFrame;
 from javax.swing import JLabel;
 from javax.swing import JButton;
-from javax.swing import JCheckBox;
 from javax.swing import JPanel;
 from javax.swing import JComboBox;
 from javax.swing import JSplitPane;
@@ -33,14 +32,10 @@ from javax.swing.table import AbstractTableModel;
 import jwt
 import hashlib
 import hmac
-import md5
 import base64
-import ast
 import mock
 import re
 import json
-import time
-from collections import OrderedDict
 from jwt.utils import *
 
 # Insets: https://docs.oracle.com/javase/7/docs/api/java/awt/Insets.html
@@ -65,10 +60,10 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         # Configuration panel Layout
         self._configurationPanel = JPanel()
         gridBagLayout = GridBagLayout()
-        gridBagLayout.columnWidths = [ 0, 0, 0]
+        gridBagLayout.columnWidths = [ 0, 0 ]
         gridBagLayout.rowHeights = [ 10, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
-        gridBagLayout.columnWeights = [ 0.0, 0.0, 0.0 ]
-        gridBagLayout.rowWeights = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+        gridBagLayout.columnWeights = [ 0.0, 0.0 ]
+        gridBagLayout.rowWeights = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0 ]
         self._configurationPanel.setLayout(gridBagLayout)
 
         # Help Panel
@@ -135,13 +130,6 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         c.anchor = GridBagConstraints.LINE_START
         self._configurationPanel.add(self._targetComboBox,c)
 
-        # Help Button
-        self._helpButton = JButton("Help", actionPerformed=self.helpMenu)
-        c = GridBagConstraints()
-        c.gridx = 2
-        c.gridy = 1
-        c.anchor = GridBagConstraints.FIRST_LINE_START
-        self._configurationPanel.add(self._helpButton,c)
 
         # Selector Options
         selectorLabel = JLabel("JSON Selector (Required): ")
@@ -153,7 +141,7 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         c.anchor = GridBagConstraints.LINE_END
         self._configurationPanel.add(selectorLabel, c)
 
-        self._selectorTextField = JTextField('',50)
+        self._selectorTextField = JTextField('',80)
         c = GridBagConstraints()
         c.gridx = 1
         c.gridy = 2
@@ -194,50 +182,29 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         c.anchor = GridBagConstraints.LINE_START
         self._configurationPanel.add(self._algorithmSelectionComboBox,c)
 
-        # Signing key options
-        self._signingKeyLabel = JLabel("Signing Key (Optional): ")
-        self._signingKeyLabel.setFont(Font("Tahoma",Font.BOLD, 12))
+        signingKeyLabel = JLabel("Signing Key (Optional): ")
+        signingKeyLabel.setFont(Font("Tahoma",Font.BOLD, 12))
         c = GridBagConstraints()
         c.gridx = 0
         c.gridy = 5
         c.insets = Insets(0,10,0,0)
         c.anchor = GridBagConstraints.LINE_END
-        self._configurationPanel.add(self._signingKeyLabel,c)
+        self._configurationPanel.add(signingKeyLabel,c)
 
-        self.addSigningKeyTextArea()
-        self._fromFileTextField = JTextField('',50) 
-        """
         self._signingKeyTextArea = JTextArea()
         self._signingKeyTextArea.setColumns(50)
         self._signingKeyTextArea.setRows(10)
-        self._signingKeyScrollPane = JScrollPane(self._signingKeyTextArea)
+        signingKeyScrollPane = JScrollPane(self._signingKeyTextArea)
         c = GridBagConstraints()
         c.gridx = 1
         c.gridy = 5
         c.anchor = GridBagConstraints.LINE_START
-        self._configurationPanel.add(self._signingKeyScrollPane,c)
-        """
-        fromFileLabel = JLabel("Signing key from file? (Optional): ")
-        fromFileLabel.setFont(Font("Tahoma",Font.BOLD, 12))
-        c = GridBagConstraints()
-        c.gridx = 0
-        c.gridy = 6
-        c.insets = Insets(0,0,0,0)
-        c.anchor = GridBagConstraints.NORTH
-        self._configurationPanel.add(fromFileLabel,c)
-
-        self._fromFileCheckBox = JCheckBox("", actionPerformed=self.fromFile)
-        c = GridBagConstraints()
-        c.gridx = 1
-        c.gridy = 6
-        c.anchor = GridBagConstraints.FIRST_LINE_START
-        self._configurationPanel.add(self._fromFileCheckBox,c)
+        self._configurationPanel.add(signingKeyScrollPane,c)
 
         self._saveButton = JButton("Save Configuration", actionPerformed=self.saveOptions)
-        self._saveButton.setText("Save Configuration")
         c = GridBagConstraints()
         c.gridx = 1
-        c.gridy = 7
+        c.gridy = 6
         c.anchor = GridBagConstraints.FIRST_LINE_START
         self._configurationPanel.add(self._saveButton,c)
 
@@ -246,97 +213,89 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         callbacks.customizeUiComponent(self._helpPanel)
         callbacks.customizeUiComponent(self._tabs)
         callbacks.addSuiteTab(self)
-        print "Loaded successfully"
+        print "test"
         return
 
 
     def getProcessorName(self):
         return "JWT Fuzzer"
     def processPayload(self, currentPayload, originalPayload, baseValue):
+        print "Processing"
         dataParameter = self._helpers.bytesToString(
                          self._helpers.urlDecode(baseValue)
                        )
-
-        # utf-8 encode
-        header,payload,signature = [unicode(s).encode('utf-8') for s in dataParameter.split(".",3)]
-        decoded_header = self._helpers.bytesToString(
-                            self._helpers.base64Decode(header + "=" * (-len(header) % 4))
-                        )
-        decoded_payload = self._helpers.bytesToString(
-                            self._helpers.base64Decode(payload+"=" * (-len(header) % 4))
-                        )
-        # Preserve JWT order
-        header_dict = json.loads(decoded_header, object_pairs_hook=OrderedDict)
-        payload_dict = json.loads(decoded_payload, object_pairs_hook=OrderedDict)
         
+        header = jwt.get_unverified_header(dataParameter)
+        payload = jwt.decode(dataParameter, verify=False)
+        signature = dataParameter.split(".")[2] # Never decode this
 
-        target = header_dict if self._fuzzoptions["target"] == "Header" else payload_dict
+        target = header if self._fuzzoptions["target"] == "Header" else payload
         selector = self._fuzzoptions["selector"]
 
-        # Retrieve the value specified by the selector, 
-        # if this value does not exist, assume the user
-        # wants to add the value that would have been specified
-        # by the selector to the dictionary (this behavior will 
-        # be noted in the help docs)
+        """
+        Retrieve the value specified by the selector, 
+        if this value does not exist, assume the user
+        wants to add the value that would have been specified
+        by the selector to the dictionary (this behavior will 
+        be noted in the help docs)
+        """
+
+        print "retriving value"
         try:
             value = self.getValue(target, selector)
-        except Exception:
+        except Exception as e:
+            print "Caught exception", e
             target = self.buildDict(target, selector)
 
+        # Insert the intruder payload if the selector is valid
         if not self._isNone(selector):
-            intruderPayload = self._helpers.bytesToString(currentPayload) 
-            target = self.setValue(target, selector, intruderPayload)
-        
-        
+            target = self.setValue(target, selector, self._helpers.bytesToString(currentPayload))
 
-        algorithm = self._fuzzoptions["algorithm"]
-        if self._fuzzoptions["signature"]: 
-            # pyjwt requires lowercase 'none'. If user wants to try
-            # "none", "NonE", "nOnE", etc... they should use .alg
-            # as selector, delete sig from intruder and use those
-            # permutations as their fuzz list (outlined in help docs)
-            # and keep "Generate Signature" as False
-            algorithm = "none" if algorithm.lower() == "none" else algorithm
-            header_dict["alg"] = algorithm
+        # If the user wants to sign the data
+        #   This WILL update the header algo
 
-        header = json.dumps(header_dict, separators=(",",":"))
-        payload = json.dumps(payload_dict, separators=(",",":"))
-        header = self._helpers.base64Encode(header).strip("=")
-        payload = self._helpers.base64Encode(payload).strip("=")
-
-        contents = header + "." + payload
-        
-        key = self._fuzzoptions["key"]
+        modified_jwt = ""
+        print "sig: ",self._fuzzoptions["signature"]
+        print self._fuzzoptions["signature"] == True
         if self._fuzzoptions["signature"]:
-            # pyjwt throws error when using a public key in symmetric alg (for good reason of course),
-            # must do manually
-            if algorithm.startswith("HS"):
-                if algorithm == "HS256":
-                    hmac_algorithm = hashlib.sha256
-                elif algorithm == "HS384":
-                    hmac_algorithm = hashlib.sha384
-                else:
-                    hmac_algorithm = hashlib.sha512
-            
-                print "Using algorithm: ",algorithm
-                signature = self._helpers.base64Encode(
-                            hmac.new(
-                                    key, contents, hmac_algorithm
-                                ).digest()
-                    ).strip("=")
+            algorithm = self._fuzzoptions["algorithm"]
+            key = self._fuzzoptions["key"]
+            header["alg"] = algorithm
 
-                modified_jwt = contents + "." +signature
-            else:
-                # Use pyjwt when using asymmetric alg
-                if algorithm == "none":
-                    key = ""
-                modified_jwt = jwt.encode(payload_dict,key,algorithm=algorithm,headers=header_dict)
+            # Catch disconnect between what jwt library expects, and what is
+            #   a valid "alg" value. Add both "None" and "none" as options
+
+            algorithm = "none" if algorithm == "None" else algorithm
+
+            modified_jwt = jwt.encode(payload,key,algorithm=algorithm,headers=headers)
+        # Don't touch signature. Put the JWT back together
         else:
-            modified_jwt = contents + "." + signature
+            encoded_header = self._helpers.urlEncode(
+                                self.encodeHeaderPayload(header)
+                            )
+            print "Encoded header: ",encoded_header
+            encoded_payload = self._helpers.urlEncode(
+                                self.encodeHeaderPayload(payload)
+                            )
+            print "Encoded payload: ",encoded_payload
+            modified_jwt = encoded_header + "." + encoded_payload + "." + signature
+
+        print "Header: ",header
+        print "Payload: ",payload
+        print modified_jwt
 
         return self._helpers.stringToBytes(modified_jwt)
 
     
+    #-----------------------
+    # Helpers
+    #-----------------------
+    def encodeHeaderPayload(self,value):
+        print "Encoding headerpayload"
+        encoded_value = self._helpers.base64Encode(
+                    self._helpers.stringToBytes(json.dumps(value))
+                    )
+        return encoded_value.replace('=','')
     #-----------------------
     # getValue:
     #   @return: A value at arbitrary depth in dictionary
@@ -378,29 +337,18 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         return root
     
     #-----------------------
-    # addSigningKeyTextArea:
-    #   @note: Will toggle if fromFile selected. Be DRY.
-    #----------------------
-    def addSigningKeyTextArea(self):
-        self._signingKeyTextArea = JTextArea()
-        self._signingKeyTextArea.setColumns(50)
-        self._signingKeyTextArea.setRows(10)
-        self._signingKeyScrollPane = JScrollPane(self._signingKeyTextArea)
-        c = GridBagConstraints()
-        c.gridx = 1
-        c.gridy = 5
-        c.anchor = GridBagConstraints.LINE_START
-        self._configurationPanel.add(self._signingKeyScrollPane,c)
-
-    def addSigningKeyFromFileTextField(self):
-        c = GridBagConstraints()
-        c.gridx = 1
-        c.gridy = 5
-        self._configurationPanel.add(self._fromFileTextField, c)
-    #-----------------------
     # End Helpers
     #-----------------------
 
+    #-----------------------
+    # JWT monkeypatch
+    #   -> JWT will not allow siging with the wrong types of keys
+    #       (e.g. will not allow generating HS256 sigs with public keys)
+    #   need to monkeypatch
+    #-----------------------
+    def prepare_key(self,key):
+        key = force_bytes(key)
+        return key
     #-----------------------
     # Implement ITab
     #-----------------------
@@ -421,52 +369,17 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         self._fuzzoptions["selector"]   = self._selectorTextField.getText()
         self._fuzzoptions["signature"]  = True if self._generateSignatureComboBox.getSelectedItem() == "True" else False
         self._fuzzoptions["algorithm"]  = self._algorithmSelectionComboBox.getSelectedItem()
-        
-        if self._fromFileCheckBox.isSelected():
-            filename = self._fromFileTextField.getText()
-            if os.path.isdir(filename):
-                print "{} is a directory".format(filename)
-                return
-            if os.path.exists(filename):
-                with open(filename, 'rb') as f:
-                    self._fuzzoptions["key"] = f.read()
-        else:
-            self._fuzzoptions["key"]    = unicode(self._signingKeyTextArea.getText()).encode("utf-8")
-        # RSA keys need to end with a line break. Many headaches because of this.
-        if not self._fuzzoptions["key"].endswith("\n") and self._fuzzoptions["algorithm"].startswith("RS"):
-            self._fuzzoptions["key"] += "\n"
+        self._fuzzoptions["key"]        = self._signingKeyTextArea.getText()
         print self._fuzzoptions
         # Sanity check selector
         m = re.search("(\.\w+)+",self._fuzzoptions["selector"])
         if isinstance(m,type(None)) or m.group(0) != self._fuzzoptions["selector"]:
-            self._saveButton.setText("Invalid JSON Selector!")
+            self._saveButton.setText("Invalid selector!")
         else:
             self._fuzzoptions["selector"] = self._fuzzoptions["selector"].split(".")[1:]
             print "Selector: ",self._fuzzoptions["selector"]
-            self._saveButton.setText("Saved!")
-            #self._saveButton.setText("Save Configuration")
+            self._saveButton.setText("Save Configuration")
         return
-
-    #-------------------------
-    # From file options
-    #------------------------
-    def fromFile(self,event):
-        if self._fromFileCheckBox.isSelected():
-            self._signingKeyLabel.setText("Path to Signing Key (Optional): ")
-            self._configurationPanel.remove(self._signingKeyScrollPane)
-            self.addSigningKeyFromFileTextField()
-            self._configurationPanel.repaint()
-        else:
-            self._signingKeyLabel.setText("Signing Key (Optional): ")
-            self._configurationPanel.remove(self._fromFileTextField)
-            self.addSigningKeyTextArea()
-            self._configurationPanel.repaint()
-
-    #-------------------------
-    # Help popup
-    #-------------------------
-    def helpMenu():
-        pass
 
 helpText = """<html>
 <p style="font-size:18px"><b>JWT Fuzzer Help: </b></p><br />
