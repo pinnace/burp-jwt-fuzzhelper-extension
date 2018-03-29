@@ -6,13 +6,13 @@ JSON Web Token (JWT) support for Burp Intruder. This extension adds a payload pr
 
 ## Comparison
 
-There are a few other very good JWT extensions for Burp Suite. The [JOSEPH](https://github.com/portswigger/json-web-token-attacker) and [JSON Web Tokens](https://github.com/portswigger/json-web-tokens) are two from Portswigger that automate some common attacks and provide various views for JWTs. But they do not provide Intruder payload processors for more targeted fuzzing, which is what this extension aims to do. This is not intended as a replacement for those extensions. In fact, this extension plays very well with other extensions and it is recommended you install them alongside this one.
+There are a few other very good JWT extensions for Burp Suite. The [JOSEPH](https://github.com/portswigger/json-web-token-attacker) and [JSON Web Tokens](https://github.com/portswigger/json-web-tokens) are two from Portswigger that automate some common attacks and provide various views for JWTs. This extension augments those by providing an Intruder interface for more targeted fuzzing.
 
 ## Dependencies
 
 This extension requires you to have Jython installed.
 
-The HS* class of signature algorithms (ie. HS256, HS384, and HS512) are implemented using native Python libraries. The RS*, ES*, and PS* class of signatures are generated via the Auth0 [pyjwt](https://pyjwt.readthedocs.io/en/latest/) library. Since pyjwt relies on Python `cryptography` libs and these libs cannot be installed via Jython, you will need to specify a folder for loading native Python modules in Extender -> Options -> Python Environment. If you are not planning on making use of ES*, RS*, or PS* algorithms you do not need `pyjwt`.
+The HS* class of signature algorithms (ie. HS256, HS384, and HS512) are implemented using native Python libraries. The RS*, ES*, PS*, and None class of signatures are generated via the [pyjwt](https://pyjwt.readthedocs.io/en/latest/) library. Since pyjwt relies on Python `cryptography` libs and these libs cannot be installed via Jython, you will need to specify a folder for loading native Python modules in Extender -> Options -> Python Environment. If you are not planning on making use of ES*, RS*, or PS* algorithms you do not need `pyjwt`.
 
 ## Installation
 
@@ -73,6 +73,17 @@ Say you want to fuzz the _role_ claim. You would use `.user.role` as your select
 ```
 
 ## Fuzzing examples
+
+### Example 1: Fuzzing for `None` type hashing
+
+Say you want to test if the application can be coerced into accepting `none` as a valid hashing algorithm. This vulnerability was originally discussed [here](https://auth0.com/blog/2015/03/31/critical-vulnerabilities-in-json-web-token-libraries/). You may want to try various permutations of none (e.g. `NoNe`, `nOne`, `noNe`, etc). Note that this is not the same as selecting 'None' as the Signature Algorithm.
+
+1. Use `.alg` as your selector
+2. Strip signature from your token
+3. Add your payload list to Intruder
+
+
+
 
 ### Example 3: `kid` claim fuzzing
 
