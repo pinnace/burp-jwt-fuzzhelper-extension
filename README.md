@@ -55,6 +55,16 @@ You can invoke the extension in the Intruder tab via payload processor pane
 
 This fuzzer uses [jq's Object Identifier-Index](https://stedolan.github.io/jq/manual/#Basicfilters) to select fields for fuzzing.
 
+### Options
+
+* `Target Selection`: Select either the Header or the Payload portion of a JWT to fuzz
+* `JSON Selector`: Specify a filter using [jq's Object Identifier-Index](https://stedolan.github.io/jq/manual/#Basicfilters).
+* `Generate Signature`: Whether or not to generate a signature
+* `Signature Algorithm`: If `Generate Signature` is True, then use this algorithm
+* `Signing Key` : Optional signing key to paste
+* `Signing Key From File`: Optionally load key from file. If selected, option `Path to Signing Key` will appear. Useful if key is raw bytes.
+* `Path to Signing Key`: Path to file with the signing key. If using RS, ES, or PS family of algorithms, this key must be a valid signing key. 
+
 #### Example: Fuzzing `alg`
 
 If you wanted to fuzz the `alg` field, you would use "Header" for your target selection and `.alg` as your selector
