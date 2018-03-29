@@ -6,7 +6,7 @@ JSON Web Token (JWT) support for Burp Intruder. This extension adds a payload pr
 
 ## Comparison
 
-There are a few other very good JWT extensions for Burp Suite. The [JOSEPH](https://github.com/portswigger/json-web-token-attacker) and [JSON Web Tokens](https://github.com/portswigger/json-web-tokens) are two from Portswigger that automate some common attacks and provide various views for JWTs. This extension augments those by providing an Intruder interface for more targeted fuzzing.
+There are a few other very good JWT extensions for Burp Suite. The [JOSEPH](https://github.com/portswigger/json-web-token-attacker) and [JSON Web Tokens](https://github.com/portswigger/json-web-tokens) are two from Portswigger that automate some common attacks and provide various views for JWTs. This extension augments those by providing an Intruder interface for more targeted fuzzing and easy manipulation of JWTs.
 
 ## Dependencies
 
