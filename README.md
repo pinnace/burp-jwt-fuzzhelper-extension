@@ -58,7 +58,7 @@ This fuzzer uses [jq's Object Identifier-Index](https://stedolan.github.io/jq/ma
 ### Options
 
 * `Target Selection`: Select either the Header or the Payload portion of a JWT to fuzz
-* `JSON Selector`: Specify a filter using [jq's Object Identifier-Index](https://stedolan.github.io/jq/manual/#Basicfilters).
+* `JSON Selector`: Specify a filter using [jq's Object Identifier-Index](https://stedolan.github.io/jq/manual/#Basicfilters) (e.g. `.user.role`). 
 * `Generate Signature`: Whether or not to generate a signature
 * `Signature Algorithm`: If `Generate Signature` is True, then use this algorithm
 * `Signing Key` : Optional signing key to paste
