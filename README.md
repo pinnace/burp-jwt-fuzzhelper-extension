@@ -12,7 +12,7 @@ There are a few other very good JWT extensions for Burp Suite. The [JOSEPH](http
 
 This extension requires you to have Jython installed.
 
-The HS* class of signature algorithms (ie. HS256, HS384, and HS512) are implemented using native Python libraries. The RS* and PS* class of signatures are generated via the [pyjwt](https://pyjwt.readthedocs.io/en/latest/) library. Since pyjwt relies on Python `cryptography` libs and these libs cannot be installed via Jython, you will need to specify a folder for loading native Python modules in Extender -> Options -> Python Environment. 
+The HS* class of signature algorithms (ie. HS256, HS384, and HS512) are implemented using native Python libraries. The RS*, ES*, and PS* class of signatures are generated via the Auth0 [pyjwt](https://pyjwt.readthedocs.io/en/latest/) library. Since pyjwt relies on Python `cryptography` libs and these libs cannot be installed via Jython, you will need to specify a folder for loading native Python modules in Extender -> Options -> Python Environment. If you are not planning on making use of ES*, RS*, or PS* algorithms you do not need `pyjwt`.
 
 ## Installation
 
@@ -31,21 +31,25 @@ Extender -> Extensions -> Add -> Type: Python -> Load `extension.py`
 
 ## Usage
 
-You can invoke the extension in the Intruder tab by invoking it in the payload processor pane
-
-<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/payload_processing.png" width="75%" height="75%">
-
-<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/payload_processing_rule.png" width="75%" height="75%">
-
-<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/processing_rule.png" width="75%" height="75%">
-
-<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/invoke_processor.png" width="75%" height="75%">
-
 ### **Important**
 
 1. You must **disable** payload encoding for the `.` character in Intruder options, or they will be URL encoded.
 
 <img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/payload_encoding.png" width="75%" height="75%">
+
+### Calling the extension
+
+You can invoke the extension in the Intruder tab via payload processor pane
+
+<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/payload_processing.png" width="65%" height="65%">
+
+<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/payload_processing_rule.png" width="65%" height="65%">
+
+<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/processing_rule.png" width="65%" height="65%">
+
+<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/invoke_processor.png" width="65%" height="65%">
+
+
 
 ## Configuring the fuzzer options
 
