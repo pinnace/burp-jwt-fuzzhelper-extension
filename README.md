@@ -63,7 +63,7 @@ If you wanted to fuzz the `alg` field, you would use "Header" for your target se
 
 #### Example: Fuzzing nested claims
 
-Say you want to fuzz the _role_ claim in the following claim. You would use `.user.role` as your selector.
+Say you want to fuzz the _role_ claim. You would use `.user.role` as your selector.
 
 ```json
 "user" : { 
@@ -78,9 +78,9 @@ Say you want to fuzz the _role_ claim in the following claim. You would use `.us
 
 [Bitcoin CTF](https://bitcoinctf.com) had a challenge last year involving an improperly handled `kid` field. Here's how this extension could help you attack that.
 
-Looking at [RFC7515](https://tools.ietf.org/html/rfc7515#section-4.1.4), we can see that the `kid` (key id) value is an optional claim field in the header section of a JWT token providing a 'hint' to the operator as to which key was used to sign the token. This is useful if multiple keys are used. Implementation itself is unspecified and up to the operator. Since the `kid` parameter may, and often is, parsed before verifying the signature and implementation itself is up to the operator, this field presents a possible attack vector.
+Looking at [RFC7515](https://tools.ietf.org/html/rfc7515#section-4.1.4), we can see that the `kid` (key id) value is an optional claim field in the header section of a JWT token providing a 'hint' to the operator as to which key was used to sign the token. This is useful if multiple keys are used. Implementation itself is unspecified and up to the operator. Since the `kid` parameter is parsed before verifying the signature and implementation is up to the operator, this field presents a promising attack vector.
 
-In the Bitcoin CTF, the `kid` field turned out to be a filename under control of the user. By specifying a CSS or JS file with known contents and manipulating the algorithm, they could generate a valid token. To test this with this fuzzer, one could do the following:
+In the Bitcoin CTF, the `kid` field turned out to be a filename under control of the user. By specifying a CSS or JS file with known contents and manipulating the algorithm, one could generate a valid token. To test this with this fuzzer, one could do the following:
 
 To exploit this using the fuzzer you would do the following:
 
