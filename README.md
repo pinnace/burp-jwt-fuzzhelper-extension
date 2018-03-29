@@ -90,6 +90,9 @@ Say you want to test if the application can be coerced into accepting `none` as 
 
 1. Use `.alg` as your selector
 2. Strip signature from your token
+
+<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/intruder_none_censored.png" width="55%" height="55%">
+
 3. Add your payload list to Intruder
 
 <img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/none_payload.png" width="75%" height="75%">
