@@ -69,7 +69,7 @@ This fuzzer uses [jq's Object Identifier-Index](https://stedolan.github.io/jq/ma
 
 If you wanted to fuzz the `alg` field, you would use "Header" for your target selection and `.alg` as your selector
 
-<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/alg_selector.png" width="75%" height="75%">
+<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/alg_selector.png" width="55%" height="55%">
 
 #### Example: Fuzzing nested claims
 
@@ -91,6 +91,13 @@ Say you want to test if the application can be coerced into accepting `none` as 
 1. Use `.alg` as your selector
 2. Strip signature from your token
 3. Add your payload list to Intruder
+
+<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/none_payload.png" width="75%" height="75%">
+
+4. Run Intruder. One can see the [JSON Web Tokens](https://github.com/portswigger/json-web-tokens) extension is also handy here
+
+<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/none_intruder.png" width="55%" height="55%">
+
 
 
 
