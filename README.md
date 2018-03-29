@@ -58,7 +58,7 @@ This fuzzer uses [jq's Object Identifier-Index](https://stedolan.github.io/jq/ma
 ### Options
 
 * `Target Selection`: Select either the Header or the Payload portion of a JWT to fuzz
-* `JSON Selector`: Specify a filter using [jq's Object Identifier-Index](https://stedolan.github.io/jq/manual/#Basicfilters) (e.g. `.user.role`). If this claim does not exist, it will be created.
+* `JSON Selector`: Specify a filter using [jq's Object Identifier-Index](https://stedolan.github.io/jq/manual/#Basicfilters) (e.g. `.user.role`). A single `.` is an empty selector. If this claim does not exist, it will be created.
 * `Generate Signature`: Whether or not to generate a signature
 * `Signature Algorithm`: If `Generate Signature` is True, then use this algorithm
 * `Signing Key` : Optional signing key to paste
@@ -86,7 +86,7 @@ Say you want to fuzz the _role_ claim. You would use `.user.role` as your select
 
 ### Example 1: Fuzzing for `None` type hashing
 
-Say you want to test if the application can be coerced into accepting `none` as a valid hashing algorithm. This vulnerability was originally discussed [here](https://auth0.com/blog/2015/03/31/critical-vulnerabilities-in-json-web-token-libraries/). You may want to try various permutations of none (e.g. `NoNe`, `nOne`, `noNe`, etc). Note that this is not the same as selecting 'None' as the Signature Algorithm.
+Say you want to test if an application can be tricked into accepting `none` as a valid hashing algorithm. This vulnerability was originally discussed [here](https://auth0.com/blog/2015/03/31/critical-vulnerabilities-in-json-web-token-libraries/). You may want to try various permutations of none (e.g. `NoNe`, `nOne`, `noNe`, etc). Note that this is not the same as selecting 'None' as the Signature Algorithm.
 
 1. Use `.alg` as your selector
 2. Strip signature from your token
@@ -102,7 +102,16 @@ Say you want to test if the application can be coerced into accepting `none` as 
 <img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/none_intruder.png" width="55%" height="55%">
 
 
+### Example 2: Algorithmic substitution
 
+Say you want to test if an application is can be tricked into using a public key as an HMAC key.
+
+1. Use an empty selector `.`, or try fuzzing another claim (e.g. Payload -> `.user.name`) to see if your attack has been successful.
+2. Set `Generate Signature` to True
+3. Select `HS256` as your signature algorithm
+4. Specify the path to the public key, or paste the key in the text box (be careful with `\n`s)
+
+<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/algorithmic_confusion.png" width="55%" height="55%">
 
 
 ### Example 3: `kid` claim fuzzing
