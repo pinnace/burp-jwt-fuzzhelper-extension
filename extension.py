@@ -14,29 +14,22 @@ from java.awt import GridBagLayout;
 from java.awt import GridBagConstraints;
 from java.awt import Insets;
 from java.awt import Font;
-from java.awt import Dimension;
 from javax.swing import JScrollPane;
-from javax.swing import ImageIcon;
-from javax.swing import JFrame;
 from javax.swing import JLabel;
 from javax.swing import JButton;
 from javax.swing import JCheckBox;
 from javax.swing import JPanel;
 from javax.swing import JComboBox;
-from javax.swing import JSplitPane;
 from javax.swing import JTabbedPane;
-from javax.swing import JTable;
 from javax.swing import SwingUtilities;
 from javax.swing import JTextField;
 from javax.swing import JTextArea;
-from javax.swing.table import AbstractTableModel;
+from javax.swing import JFrame;
 import jwt
 import hashlib
 import hmac
 import md5
 import base64
-import ast
-import mock
 import re
 import json
 import time
@@ -465,9 +458,23 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
     #-------------------------
     # Help popup
     #-------------------------
-    def helpMenu():
-        pass
+    def helpMenu(self,event):
+        print "Helphelp"
+        self._helpPopup = JFrame('JWT Fuzzer help', size=(550, 450) );
+        helpHeadingText = JLabel("<html><h2>JWT Fuzzer</h2></html>")
 
+        self._helpPopup.add(helpText)
+        self._helpPopup.pack()
+        self._helpPopup.setLocationRelativeTo(None)
+        self._helpPopup.setVisible(True)
+        #self._helpPopup.addText("Some text")
+        #addURL
+        #addRemoteImage
+
+infoBox = """<html>
+
+
+</html>"""
 helpText = """<html>
 <p style="font-size:18px"><b>JWT Fuzzer Help: </b></p><br />
 <p style="font-size:14px"><i>Target Selection: </i></p><br />
