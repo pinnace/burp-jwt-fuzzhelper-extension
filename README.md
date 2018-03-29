@@ -1,8 +1,12 @@
 # burp-jwt-extension
 
+## Purpose
+
+JWT Support for Burp Intruder. This extension adds a payload processor for fuzzing claims.
+
 ## Comparison
 
-There are a few other very good JWT extensions for Burp Suite. The [JOSEPH](https://github.com/portswigger/json-web-token-attacker) and [JSON Web Tokens](https://github.com/portswigger/json-web-tokens) are two from Portswigger that automate some common attacks and provide highlighting and custom views for JWTs. But they do not provide Intruder payload processors for more targeted fuzzing, which is what this extension aims to do. This is not intended as a replacement for those extensions. In fact, this extension plays very well with the aforementioned tools and I recommend you install them alongside this one.
+There are a few other very good JWT extensions for Burp Suite. The [JOSEPH](https://github.com/portswigger/json-web-token-attacker) and [JSON Web Tokens](https://github.com/portswigger/json-web-tokens) are two from Portswigger that automate some common attacks and provide various views for JWTs. But they do not provide Intruder payload processors for more targeted fuzzing, which is what this extension aims to do. This is not intended as a replacement for those extensions. In fact, this extension plays very well with the them and I recommend you install them alongside this one.
 
 ## Dependencies
 
@@ -20,9 +24,9 @@ $ pip install -r requirements.txt
 
 #### Install the extension.
 
-You can do this in the extender pane
+You can do this in the extender pane.
 
-<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/install_extension.png" width="75%" height="75%">
+Extender -> Extensions -> Add -> Type: Python -> Load `extension.py`
 
 
 ## Usage
