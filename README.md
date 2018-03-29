@@ -2,7 +2,7 @@
 
 ## Purpose
 
-JWT Support for Burp Intruder. This extension adds a payload processor for fuzzing claims.
+JSON Web Token (JWT) support for Burp Intruder. This extension adds a payload processor for fuzzing JWT claims.
 
 ## Comparison
 
