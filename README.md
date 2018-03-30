@@ -12,7 +12,7 @@ Example use cases may include:
 1. Inserting atypical values for common claims
 2. Inserting new claims that may be processed by the application before signature validation (e.g. kid)
 3. Easily iterating over a large set of payload claims if, for example, a key has been compromised
-4. Inserting bogus or unusually encoded strings or bad inputs. For example, thos in the [Big List of Naughty Strings](https://github.com/minimaxir/big-list-of-naughty-strings)
+4. Inserting bogus or unusually encoded strings or bad inputs. For example, those in the [Big List of Naughty Strings](https://github.com/minimaxir/big-list-of-naughty-strings)
 5. Manipulation of timestamps or expirations in `iat`, `exp`, etc...
 6. Classic attacks like testing for `none` type signatures, algorithmic substitution, etc...
 
