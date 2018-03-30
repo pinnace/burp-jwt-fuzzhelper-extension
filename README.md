@@ -59,8 +59,8 @@ This fuzzer uses [jq's Object Identifier-Index](https://stedolan.github.io/jq/ma
 
 * `Target Selection`: Select either the Header or the Payload portion of a JWT to fuzz
 * `JSON Selector`: Specify a filter using [jq's Object Identifier-Index](https://stedolan.github.io/jq/manual/#Basicfilters) (e.g. `.user.role`) or a regex depending on whether `Use regex as JSON selector` is checked. 
-       - For Object Identifier-Index selectors, a single `.` is an empty selector. If this claim does not exist, it will be created.
-       - For regular expressions, the regex is passed to [`re.sub`](https://docs.python.org/2/library/re.html#re.sub)
+       ** For Object Identifier-Index selectors, a single `.` is an empty selector. If this claim does not exist, it will be created.
+       ** For regular expressions, the regex is passed to [`re.sub`](https://docs.python.org/2/library/re.html#re.sub)
 * `Generate Signature`: Whether or not to generate a signature
 * `Signature Algorithm`: If `Generate Signature` is True, then use this algorithm
 * `Signing Key` : Optional signing key to paste
