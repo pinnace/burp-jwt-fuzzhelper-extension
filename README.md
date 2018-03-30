@@ -16,6 +16,8 @@ Example use cases may include:
 5. Manipulation of timestamps or expirations in `iat`, `exp`, etc...
 6. Classic attacks like testing for `none` type signatures, algorithmic substitution, etc...
 
+This extension will also process JWT tokens that do not have JSON encoded payloads, which is something other extensions have overlooked.
+
 ## Dependencies
 
 This extension requires you to have Jython installed.
