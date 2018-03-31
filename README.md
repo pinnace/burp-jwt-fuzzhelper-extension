@@ -103,7 +103,7 @@ Say you want to fuzz _role_. You would use `.user.role` as your selector. If you
 
 ## Fuzzing examples
 
-### Example 1: Fuzzing for `None` type hashing
+### Example 1: Fuzzing for `None`
 
 Say you want to test if an application can be tricked into accepting `none` as a valid hashing algorithm. This vulnerability was originally discussed [here](https://auth0.com/blog/2015/03/31/critical-vulnerabilities-in-json-web-token-libraries/). You may want to try various permutations of none (e.g. `NoNe`, `nOne`, `noNe`, etc). Note that this is not the same as selecting 'None' as the Signature Algorithm.
 
