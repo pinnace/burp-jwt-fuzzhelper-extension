@@ -2,6 +2,7 @@ from burp import IBurpExtender
 from burp import IIntruderPayloadProcessor
 from burp import ITab
 from burp import IBurpExtenderCallbacks
+from burp import IExtensionStateListener
 
 
 from java.awt import Component;
@@ -14,6 +15,10 @@ from java.awt import GridBagLayout;
 from java.awt import GridBagConstraints;
 from java.awt import Insets;
 from java.awt import Font;
+from java.awt import Dimension;
+from java.awt import Cursor;
+from java.awt.event import MouseAdapter;
+from javax.swing import BoxLayout;
 from javax.swing import JScrollPane;
 from javax.swing import JLabel;
 from javax.swing import JButton;
@@ -25,25 +30,30 @@ from javax.swing import SwingUtilities;
 from javax.swing import JTextField;
 from javax.swing import JTextArea;
 from javax.swing import JFrame;
+from javax.swing.border import EmptyBorder;
 import jwt
 import hashlib
 import hmac
 import md5
 import base64
 import re
+import rsa
 import json
 import time
+import pyasn1
+import webbrowser
 from collections import OrderedDict
 from jwt.utils import *
 
 # Insets: https://docs.oracle.com/javase/7/docs/api/java/awt/Insets.html
 
 
-class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProcessor, ITab):
+class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProcessor, ITab, IExtensionStateListener):
     def registerExtenderCallbacks( self, callbacks):
         self._helpers = callbacks.getHelpers()
         callbacks.setExtensionName("JWT Fuzzer")
         callbacks.registerIntruderPayloadProcessor(self)
+        callbacks.registerExtensionStateListener(self)
         
         self._fuzzoptions = { 
                                 "target" : "Header", 
@@ -59,9 +69,9 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         self._configurationPanel = JPanel()
         gridBagLayout = GridBagLayout()
         gridBagLayout.columnWidths = [ 0, 0, 0]
-        gridBagLayout.rowHeights = [ 10, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+        gridBagLayout.rowHeights = [ 10, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
         gridBagLayout.columnWeights = [ 0.0, 0.0, 0.0 ]
-        gridBagLayout.rowWeights = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+        gridBagLayout.rowWeights = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
         self._configurationPanel.setLayout(gridBagLayout)
 
         # Help Panel
@@ -70,7 +80,8 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         gridBagLayout.rowHeights = [ 10, 10 ]
         gridBagLayout.columnWeights = [ 0.0, 0 ]
         gridBagLayout.rowWeights = [0.0, 0 ]
-        self._helpPanel = JPanel(BorderLayout())
+        """
+        #self._helpPanel = JPanel(BorderLayout())
         topLabel = JLabel()
         topLabel.setFont(Font("Lucida Grande", Font.BOLD, 18))
         #topLabel.setText("JWT Fuzzer usage:")
@@ -82,7 +93,7 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         c.gridx = 0
         c.gridy = 0
         c.insets = Insets(0,10,0,10)
-        self._helpPanel.add(topLabel,BorderLayout.PAGE_START)
+        #self._helpPanel.add(topLabel,BorderLayout.PAGE_START)
 
         targetHelpHeaderLabel = JLabel()
         targetHelpHeaderLabel.setFont(Font("Lucida Grande", Font.BOLD, 14))
@@ -103,12 +114,13 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         c.gridx = 0
         c.gridy = 2
         #self._helpPanel.add(targetHelpLabel,BorderLayout.PAGE_END)
+        """
 
-
+        
         # Setup tabs
         self._tabs = JTabbedPane()
         self._tabs.addTab('Configuration',self._configurationPanel)
-        self._tabs.addTab('Help',self._helpPanel)
+        #self._tabs.addTab('Help',self._helpPanel)
 
         # Target Options
         targetLabel = JLabel("Target Selection (Required): ")
@@ -137,14 +149,14 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         self._configurationPanel.add(self._helpButton,c)
 
         # Selector Options
-        selectorLabel = JLabel("JSON Selector (Required): ")
-        selectorLabel.setFont(Font("Tahoma",Font.BOLD, 12))
+        self._selectorLabel = JLabel("JSON Selector [Object Identifier-Index Syntax] (Required): ")
+        self._selectorLabel.setFont(Font("Tahoma",Font.BOLD, 12))
         c = GridBagConstraints()
         c.gridx = 0
         c.gridy = 2
         c.insets = Insets(0,10,0,0)
         c.anchor = GridBagConstraints.LINE_END
-        self._configurationPanel.add(selectorLabel, c)
+        self._configurationPanel.add(self._selectorLabel, c)
 
         self._selectorTextField = JTextField('',50)
         c = GridBagConstraints()
@@ -152,12 +164,30 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         c.gridy = 2
         self._configurationPanel.add(self._selectorTextField, c)
 
+        # Regex option
+
+        self._regexLabel = JLabel("Use regex as JSON Selector? (Optional): ")
+        self._regexLabel.setFont(Font("Tahoma",Font.BOLD, 12))
+        c = GridBagConstraints()
+        c.gridx = 0
+        c.gridy = 3
+        c.insets = Insets(0,0,0,0)
+        c.anchor = GridBagConstraints.LINE_END
+        self._configurationPanel.add(self._regexLabel,c)
+
+        self._regexCheckBox = JCheckBox("", actionPerformed=self.regexSelector)
+        c = GridBagConstraints()
+        c.gridx = 1
+        c.gridy = 3
+        c.anchor = GridBagConstraints.FIRST_LINE_START
+        self._configurationPanel.add(self._regexCheckBox,c)
+
         # Signature Options
         generateSignatureLabel = JLabel("Generate signature? (Required): ")
         generateSignatureLabel.setFont(Font("Tahoma",Font.BOLD, 12))
         c = GridBagConstraints()
         c.gridx = 0
-        c.gridy = 3
+        c.gridy = 4
         c.insets = Insets(0,10,0,0)
         c.anchor = GridBagConstraints.LINE_END
         self._configurationPanel.add(generateSignatureLabel,c)
@@ -166,7 +196,7 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         self._generateSignatureComboBox = JComboBox(options)
         c = GridBagConstraints()
         c.gridx = 1
-        c.gridy = 3
+        c.gridy = 4
         c.anchor = GridBagConstraints.LINE_START
         self._configurationPanel.add(self._generateSignatureComboBox,c)
 
@@ -174,7 +204,7 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         signatureAlgorithmLabel.setFont(Font("Tahoma",Font.BOLD, 12))
         c = GridBagConstraints()
         c.gridx = 0
-        c.gridy = 4
+        c.gridy = 5
         c.insets = Insets(0,10,0,0)
         c.anchor = GridBagConstraints.LINE_END
         self._configurationPanel.add(signatureAlgorithmLabel,c)
@@ -183,7 +213,7 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         self._algorithmSelectionComboBox = JComboBox(options)
         c = GridBagConstraints()
         c.gridx = 1
-        c.gridy = 4
+        c.gridy = 5
         c.anchor = GridBagConstraints.LINE_START
         self._configurationPanel.add(self._algorithmSelectionComboBox,c)
 
@@ -192,37 +222,27 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         self._signingKeyLabel.setFont(Font("Tahoma",Font.BOLD, 12))
         c = GridBagConstraints()
         c.gridx = 0
-        c.gridy = 5
+        c.gridy = 6
         c.insets = Insets(0,10,0,0)
         c.anchor = GridBagConstraints.LINE_END
         self._configurationPanel.add(self._signingKeyLabel,c)
 
         self.addSigningKeyTextArea()
         self._fromFileTextField = JTextField('',50) 
-        """
-        self._signingKeyTextArea = JTextArea()
-        self._signingKeyTextArea.setColumns(50)
-        self._signingKeyTextArea.setRows(10)
-        self._signingKeyScrollPane = JScrollPane(self._signingKeyTextArea)
-        c = GridBagConstraints()
-        c.gridx = 1
-        c.gridy = 5
-        c.anchor = GridBagConstraints.LINE_START
-        self._configurationPanel.add(self._signingKeyScrollPane,c)
-        """
+
         fromFileLabel = JLabel("Signing key from file? (Optional): ")
         fromFileLabel.setFont(Font("Tahoma",Font.BOLD, 12))
         c = GridBagConstraints()
         c.gridx = 0
-        c.gridy = 6
+        c.gridy = 7
         c.insets = Insets(0,0,0,0)
-        c.anchor = GridBagConstraints.NORTH
+        c.anchor = GridBagConstraints.LINE_END
         self._configurationPanel.add(fromFileLabel,c)
 
         self._fromFileCheckBox = JCheckBox("", actionPerformed=self.fromFile)
         c = GridBagConstraints()
         c.gridx = 1
-        c.gridy = 6
+        c.gridy = 7
         c.anchor = GridBagConstraints.FIRST_LINE_START
         self._configurationPanel.add(self._fromFileCheckBox,c)
 
@@ -230,13 +250,12 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         self._saveButton.setText("Save Configuration")
         c = GridBagConstraints()
         c.gridx = 1
-        c.gridy = 7
+        c.gridy = 8
         c.anchor = GridBagConstraints.FIRST_LINE_START
         self._configurationPanel.add(self._saveButton,c)
 
         
         callbacks.customizeUiComponent(self._configurationPanel)
-        callbacks.customizeUiComponent(self._helpPanel)
         callbacks.customizeUiComponent(self._tabs)
         callbacks.addSuiteTab(self)
         print "Loaded successfully"
@@ -245,6 +264,12 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
 
     def getProcessorName(self):
         return "JWT Fuzzer"
+
+    def extensionUnloaded(self):
+        del self._configurationPanel
+        return
+
+    # Intruder logic function
     def processPayload(self, currentPayload, originalPayload, baseValue):
         dataParameter = self._helpers.bytesToString(
                          self._helpers.urlDecode(baseValue)
@@ -256,31 +281,60 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
                             self._helpers.base64Decode(header + "=" * (-len(header) % 4))
                         )
         decoded_payload = self._helpers.bytesToString(
-                            self._helpers.base64Decode(payload+"=" * (-len(header) % 4))
+                            self._helpers.base64Decode(payload+"=" * (-len(payload) % 4))
                         )
-        # Preserve JWT order
-        header_dict = json.loads(decoded_header, object_pairs_hook=OrderedDict)
-        payload_dict = json.loads(decoded_payload, object_pairs_hook=OrderedDict)
-        
+
+        # Decode header and payload, preserving order if they are JSON objects
+
+        # Decode header
+        try:
+            header_dict = json.loads(decoded_header, object_pairs_hook=OrderedDict)
+        except ValueError:
+            print "Failed to decode header!"
+            return
+        except Exception as e:
+            print "Exception: ",e.message
+
+        # Decode payload
+        # Payload does not have to be a JSON object.
+        #   Ref: https://github.com/auth0/node-jsonwebtoken#usage
+        payload_is_string = False
+        try:
+            payload_dict = json.loads(decoded_payload, object_pairs_hook=OrderedDict)
+        except ValueError:
+            payload_is_string = True
+            payload_dict = decoded_payload
+        except Exception as e:
+            print "Exception: ",e.message
 
         target = header_dict if self._fuzzoptions["target"] == "Header" else payload_dict
         selector = self._fuzzoptions["selector"]
 
-        # Retrieve the value specified by the selector, 
+        # If using Object Identifier-Index then retrieve the 
+        # value specified by the selector, 
         # if this value does not exist, assume the user
         # wants to add the value that would have been specified
         # by the selector to the dictionary (this behavior will 
         # be noted in the help docs)
-        try:
-            value = self.getValue(target, selector)
-        except Exception:
-            target = self.buildDict(target, selector)
 
-        if not self._isNone(selector):
-            intruderPayload = self._helpers.bytesToString(currentPayload) 
-            target = self.setValue(target, selector, intruderPayload)
+        intruderPayload = self._helpers.bytesToString(currentPayload)
+        if not self._fuzzoptions["regex"]:
+            if selector != [""]:
+                try:
+                    value = self.getValue(target, selector)
+                except Exception:
+                    target = self.buildDict(target, selector)
+
+            if not self._isNone(selector) and selector != [""]:
+                target = self.setValue(target, selector, intruderPayload)
         
-        
+        # Simple match-replace for regex
+        if self._fuzzoptions["regex"]:
+            target_string = target if payload_is_string else json.dumps(target)
+            target_string = re.sub(selector, intruderPayload, target_string)
+            target = target_string if payload_is_string else json.loads(target_string, object_pairs_hook=OrderedDict)
+            if self._fuzzoptions["target"] == "Payload":
+                payload_dict = target
 
         algorithm = self._fuzzoptions["algorithm"]
         if self._fuzzoptions["signature"]: 
@@ -293,7 +347,7 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
             header_dict["alg"] = algorithm
 
         header = json.dumps(header_dict, separators=(",",":"))
-        payload = json.dumps(payload_dict, separators=(",",":"))
+        payload = payload_dict if payload_is_string else json.dumps(payload_dict, separators=(",",":"))
         header = self._helpers.base64Encode(header).strip("=")
         payload = self._helpers.base64Encode(payload).strip("=")
 
@@ -302,7 +356,7 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         key = self._fuzzoptions["key"]
         if self._fuzzoptions["signature"]:
             # pyjwt throws error when using a public key in symmetric alg (for good reason of course),
-            # must do manually
+            # must do natively to support algorithmic sub attacks
             if algorithm.startswith("HS"):
                 if algorithm == "HS256":
                     hmac_algorithm = hashlib.sha256
@@ -319,6 +373,20 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
                     ).strip("=")
 
                 modified_jwt = contents + "." +signature
+
+            # JWT can't sign non-JSON payloads. WTF.
+            elif algorithm.startswith("RS") and payload_is_string:
+                if algorithm == "RS256":
+                    rsa_algorithm = "SHA-256"
+                elif algorithm == "RS384":
+                    rsa_algorithm = "SHA-384"
+                else:
+                    rsa_algorithm = "SHA-512"
+                privkey = rsa.PrivateKey.load_pkcs1(key)
+                signature = rsa.sign(contents,privkey,rsa_algorithm)
+                signature = base64.b64encode(signature).encode('utf-8').replace("=", "")
+                modified_jwt = contents + "." + signature
+                print "RSA sig: ",signature
             else:
                 # Use pyjwt when using asymmetric alg
                 if algorithm == "none":
@@ -381,14 +449,14 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         self._signingKeyScrollPane = JScrollPane(self._signingKeyTextArea)
         c = GridBagConstraints()
         c.gridx = 1
-        c.gridy = 5
+        c.gridy = 6
         c.anchor = GridBagConstraints.LINE_START
         self._configurationPanel.add(self._signingKeyScrollPane,c)
 
     def addSigningKeyFromFileTextField(self):
         c = GridBagConstraints()
         c.gridx = 1
-        c.gridy = 5
+        c.gridy = 6
         self._configurationPanel.add(self._fromFileTextField, c)
     #-----------------------
     # End Helpers
@@ -429,15 +497,26 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         if not self._fuzzoptions["key"].endswith("\n") and self._fuzzoptions["algorithm"].startswith("RS"):
             self._fuzzoptions["key"] += "\n"
         print self._fuzzoptions
-        # Sanity check selector
-        m = re.search("(\.\w+)+",self._fuzzoptions["selector"])
-        if isinstance(m,type(None)) or m.group(0) != self._fuzzoptions["selector"]:
-            self._saveButton.setText("Invalid JSON Selector!")
+
+
+        # Sanity check selector if it's not a regular expression
+        self._fuzzoptions["regex"] = self._regexCheckBox.isSelected()
+        if not self._regexCheckBox.isSelected():
+            m = re.search("(\.\w+)+",self._fuzzoptions["selector"])
+            if self._fuzzoptions["selector"] != "." and (isinstance(m,type(None)) or m.group(0) != self._fuzzoptions["selector"]):
+                self._saveButton.setText("Invalid JSON Selector!")
+            else:
+                self._fuzzoptions["selector"] = self._fuzzoptions["selector"].split(".")[1:]
+                print "Selector: ",self._fuzzoptions["selector"]
+                self._saveButton.setText("Saved!")
+                #self._saveButton.setText("Save Configuration")
+        # Sanity check the regular expression
         else:
-            self._fuzzoptions["selector"] = self._fuzzoptions["selector"].split(".")[1:]
-            print "Selector: ",self._fuzzoptions["selector"]
-            self._saveButton.setText("Saved!")
-            #self._saveButton.setText("Save Configuration")
+            try:
+                re.compile(self._fuzzoptions["selector"])
+                self._saveButton.setText("Saved!")
+            except re.error:
+                self._saveButton.setText("Invalid Regex!")
         return
 
     #-------------------------
@@ -448,55 +527,62 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
             self._signingKeyLabel.setText("Path to Signing Key (Optional): ")
             self._configurationPanel.remove(self._signingKeyScrollPane)
             self.addSigningKeyFromFileTextField()
-            self._configurationPanel.repaint()
         else:
             self._signingKeyLabel.setText("Signing Key (Optional): ")
             self._configurationPanel.remove(self._fromFileTextField)
             self.addSigningKeyTextArea()
-            self._configurationPanel.repaint()
+        self._configurationPanel.repaint()
+        return
 
+    def regexSelector(self,event):
+        if self._regexCheckBox.isSelected():
+            self._selectorLabel.setText("JSON Selector [Regex] (Required): ")
+        else:
+            self._selectorLabel.setText("JSON Selector [Object Identifier-Index Syntax] (Required): ")
+        self._configurationPanel.repaint()
+        return
     #-------------------------
     # Help popup
     #-------------------------
     def helpMenu(self,event):
-        print "Helphelp"
-        self._helpPopup = JFrame('JWT Fuzzer help', size=(550, 450) );
+        self._helpPopup = JFrame('JWT Fuzzer', size=(550, 450) );
+        self._helpPopup.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE)
+        helpPanel = JPanel()
+        helpPanel.setPreferredSize(Dimension(550, 450))
+        helpPanel.setBorder(EmptyBorder(10, 10, 10, 10))
+        helpPanel.setLayout(BoxLayout(helpPanel, BoxLayout.Y_AXIS))
+        self._helpPopup.setContentPane(helpPanel)
         helpHeadingText = JLabel("<html><h2>JWT Fuzzer</h2></html>")
+        authorText = JLabel("<html><p>@author: Lukas Stephan &lt;pinnace&gt;</p></html>")
+        aboutText = JLabel("<html><br /> <p>This extension adds an Intruder payload processor for JWTs.</p></html>")
+        repositoryText = JLabel("<html>Documentation and source code:</html>")
+        repositoryLink = JLabel("<html>- <a href=\"https://github.com/cle0patra/burp-jwt-extension\">https://github.com/cle0patra/burp-jwt-extension</a></html>")
+        licenseText = JLabel("<html><br/><p>JWT Fuzzer uses a GPL 3 license. This license does not apply to the dependency below:<p></html>") 
+        dependencyLink = JLabel("<html>- <a href=\"https://github.com/jpadilla/pyjwt/blob/master/LICENSE\">Auth0 pyjwt</a></html>")
+        dependencyLink.addMouseListener(ClickListener())
+        dependencyLink.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR))
+        repositoryLink.addMouseListener(ClickListener())
+        repositoryLink.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR))
+        
+        helpPanel.add(helpHeadingText)
+        helpPanel.add(authorText)
+        helpPanel.add(aboutText)
+        helpPanel.add(repositoryText)
+        helpPanel.add(repositoryLink)
+        helpPanel.add(licenseText)
+        helpPanel.add(dependencyLink)
 
-        self._helpPopup.add(helpText)
+        self._helpPopup.setSize(Dimension(550, 450))
         self._helpPopup.pack()
         self._helpPopup.setLocationRelativeTo(None)
         self._helpPopup.setVisible(True)
-        #self._helpPopup.addText("Some text")
-        #addURL
-        #addRemoteImage
 
-infoBox = """<html>
-
-
-</html>"""
-helpText = """<html>
-<p style="font-size:18px"><b>JWT Fuzzer Help: </b></p><br />
-<p style="font-size:14px"><i>Target Selection: </i></p><br />
-<p style="font-size:12px">Select which section of the JWT you will be fuzzing.
-<br />You can fuzz the <b>"Header"</b> section or the <b>"Payload"</b> section
-This will default to the <b>"Header"</b> section</p><br />
-<p style="font-size:14px"><i>Selector: </i></p><br />
-<p style="font-size:12px">Specify a selector for the value you wish to fuzz. This is done using <a href="https://stedolan.github.io/jq/manual/">jq's Object Identifier-Index</a> syntax. <br />
-<i>Example 1: </i> Fuzzing the "alg" value<br /> 
-If you wished to fuzz the value of "alg" you would specify </b>Header</b> as your target and use <i>.alg</i> as your selector. <br />
-<i>Example 2: </i> Fuzzing nested values <br />
-Say you JWT payload had a claim that looked like this: <br />
-<i>{</i> <br />
-<i>   "user" : { </i> <br />
-<i>       "username" : "john.doe", </i> <br />
-<i>       "role" : "admin" </i> <br />
-<i>    } </i> <br />
-<i>}</i><br /><br />
-To fuzz the <i>role</i>, your selector would be <i>.user.role</i> and your target would be <b>Payload</b><br />
-</html>"""
-targetHelpText = """<html><p style="font-size:20px">Selection which section of the JWT will be fuzzed.<br />You can fuzz the <b>"Header"</b> section or the <b>"Payload"</b> section</p></html>"""
-
-
-
+class ClickListener(MouseAdapter):
+    def mousePressed(self, event):
+        print "Mouse pressed"
+        labelText = event.source.text
+        hrefBeginIndex = labelText.index("href=\"")
+        hrefEndIndex = labelText.index("\">")
+        link = labelText[hrefBeginIndex+6:hrefEndIndex]
+        webbrowser.open(link)
 
