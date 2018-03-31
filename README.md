@@ -6,7 +6,7 @@ JSON Web Token (JWT) support for Burp Intruder. This extension adds a payload pr
 
 ## Comparison
 
-[JOSEPH](https://github.com/portswigger/json-web-token-attacker) and [JSON Web Tokens](https://github.com/portswigger/json-web-tokens) extensions are two from Portswigger that automate some common attacks and provide various views for JWTs. This novel extension complements those by providing an Intruder hook for more targeted fuzzing and easy, on-the-fly manipulation of JWTs.
+[JOSEPH](https://github.com/portswigger/json-web-token-attacker) and [JSON Web Tokens](https://github.com/portswigger/json-web-tokens) extensions are two from Portswigger that automate some common attacks and provide various views for JWTs. This  extension complements those by providing a novel Intruder hook for more targeted fuzzing and on-the-fly manipulation of JWTs.
 
 ## Use Cases
 
