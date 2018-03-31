@@ -114,7 +114,7 @@ Say you want to test if an application can be tricked into accepting `none` as a
 
 3. Add your payload list to Intruder
 
-<img src="https://github.com/pinnace/burp-jwt-extension-images/blob/master/none_payload.png" width="60%" height="60%">
+<img src="https://github.com/pinnace/burp-jwt-extension-images/blob/master/none_payload.png" width="55%" height="55%">
 
 4. Run Intruder. One can see the [JSON Web Tokens](https://github.com/portswigger/json-web-tokens) extension is also handy here
 
@@ -150,6 +150,11 @@ To exploit this using the fuzzer you would do the following:
 5. Hit save
 
 <img src="https://github.com/pinnace/burp-jwt-extension-images/blob/master/kid_config.png" width="75%" height="75%">
+
+Or
+
+<img src="https://github.com/pinnace/burp-jwt-extension-images/blob/master/kid_config2.png" width="75%" height="75%">
+
 
 6. Add your fuzz list
 
