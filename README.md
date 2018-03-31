@@ -1,4 +1,4 @@
-# burp-jwt-fuzzer-extension
+# JWT FuzzHelper for Burp
 
 ## Purpose
 
