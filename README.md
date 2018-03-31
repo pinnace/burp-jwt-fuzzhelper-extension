@@ -71,6 +71,7 @@ This fuzzer uses [jq's Object Identifier-Index](https://stedolan.github.io/jq/ma
 
 * `Target Selection`: Select either the Header or the Payload portion of a JWT to fuzz
 * `JSON Selector`: Specify a filter using [jq's Object Identifier-Index](https://stedolan.github.io/jq/manual/#Basicfilters) (e.g. `.user.role`) or a regex depending on whether `Use regex as JSON selector` is checked.
+
        ⋅⋅1. For Object Identifier-Index selectors, a single `.` is an empty selector. If this claim does not exist, it will be created.
        ⋅⋅2. For regular expressions, the regex is passed to [`re.sub`](https://docs.python.org/2/library/re.html#re.sub). An empty selector is no character.
 * `Use regex as JSON selector`: As stated, optionally use a regex.
