@@ -63,31 +63,32 @@ You can invoke the extension in the Intruder tab via payload processor pane
 
 
 
-## Configuring the fuzzer options
+## Configuration
 
-This fuzzer uses [jq's Object Identifier-Index](https://stedolan.github.io/jq/manual/#Basicfilters) to select fields for fuzzing.
+This fuzzer uses [jq's Object Identifier-Index](https://stedolan.github.io/jq/manual/#Basicfilters) or a regular expression to select fields for fuzzing.
 
 ### Options
 
 * `Target Selection`: Select either the Header or the Payload portion of a JWT to fuzz
 * `JSON Selector`: Specify a filter using [jq's Object Identifier-Index](https://stedolan.github.io/jq/manual/#Basicfilters) (e.g. `.user.role`) or a regex depending on whether `Use regex as JSON selector` is checked. 
-       ** For Object Identifier-Index selectors, a single `.` is an empty selector. If this claim does not exist, it will be created.
-       ** For regular expressions, the regex is passed to [`re.sub`](https://docs.python.org/2/library/re.html#re.sub)
+       ⋅⋅* For Object Identifier-Index selectors, a single `.` is an empty selector. If this claim does not exist, it will be created.
+       ⋅⋅* For regular expressions, the regex is passed to [`re.sub`](https://docs.python.org/2/library/re.html#re.sub)
+* `Use regex as JSON selector`: As stated, optionally use a regex.
 * `Generate Signature`: Whether or not to generate a signature
 * `Signature Algorithm`: If `Generate Signature` is True, then use this algorithm
 * `Signing Key` : Optional signing key to paste
 * `Signing Key From File`: Optionally load key from file. If selected, option `Path to Signing Key` will appear. Useful if key is raw bytes.
 * `Path to Signing Key`: Path to file with the signing key. If using RS, ES, or PS family of algorithms, this key must be a valid signing key. 
 
-#### Example: Fuzzing `alg`
+#### Selector Example: Selecting `alg`
 
 If you wanted to fuzz the `alg` field, you would use "Header" for your target selection and `.alg` as your selector
 
 <img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/alg_selector.png" width="55%" height="55%">
 
-#### Example: Fuzzing nested claims
+#### Selector Example: Selecting a nested claim
 
-Say you want to fuzz the _role_ claim. You would use `.user.role` as your selector.
+Given the claim:
 
 ```json
 "user" : { 
@@ -95,6 +96,10 @@ Say you want to fuzz the _role_ claim. You would use `.user.role` as your select
        "role" : "admin" 
     } 
 ```
+
+Say you want to fuzz _role_. You would use `.user.role` as your selector. If you were using a regex, you might just use `admin`.
+
+
 
 ## Fuzzing examples
 
