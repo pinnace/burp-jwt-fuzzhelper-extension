@@ -6,13 +6,13 @@ JSON Web Token (JWT) support for Burp Intruder. This extension adds a payload pr
 
 ## Comparison
 
-[JOSEPH](https://github.com/portswigger/json-web-token-attacker) and [JSON Web Tokens](https://github.com/portswigger/json-web-tokens) extensions are two from Portswigger that automate some common attacks and provide various views for JWTs. This novel extension complements those by providing an Intruder hook for more targeted fuzzing and easy, on-the-fly manipulation of JWTs.
+[JOSEPH](https://github.com/portswigger/json-web-token-attacker) and [JSON Web Tokens](https://github.com/portswigger/json-web-tokens) extensions are two from Portswigger that automate some common attacks and provide various views for JWTs. This  extension complements those by providing a novel Intruder hook for more targeted fuzzing and on-the-fly manipulation of JWTs.
 
 ## Use Cases
 
 Example use cases may include:
 1. Inserting atypical values for common claims
-2. Inserting new claims that may be processed by the application before signature validation
+2. Inserting a new claim that may be processed by the application before signature validation
 3. Easily iterating over a large set of payload claim values if, for example, one has obtained a signing key
 4. Inserting bogus or unusually encoded strings or bad inputs. For example, those in the [Big List of Naughty Strings](https://github.com/minimaxir/big-list-of-naughty-strings)
 5. Manipulation of timestamps or expirations in `iat`, `exp`, etc...
@@ -38,7 +38,7 @@ $ pip install -r requirements.txt
 
 You can do this in the extender pane.
 
-Extender -> Extensions -> Add -> Type: Python -> Load `extension.py`
+Extender -> Extensions -> Add -> Type: Python -> Load `burp-jwt-fuzzhelper.py`
 
 
 ## Usage
@@ -47,19 +47,19 @@ Extender -> Extensions -> Add -> Type: Python -> Load `extension.py`
 
 1. You must **disable** payload encoding for the `.` character in Intruder options, or they will be URL encoded.
 
-<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/payload_encoding.png" width="75%" height="75%">
+<img src="https://github.com/pinnace/burp-jwt-extension-images/blob/master/payload_encoding.png" width="75%" height="75%">
 
 ### Calling the extension
 
 You can invoke the extension in the Intruder tab via payload processor pane
 
-<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/payload_processing.png" width="65%" height="65%">
+<img src="https://github.com/pinnace/burp-jwt-extension-images/blob/master/payload_processing.png" width="65%" height="65%">
 
-<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/payload_processing_rule.png" width="65%" height="65%">
+<img src="https://github.com/pinnace/burp-jwt-extension-images/blob/master/payload_processing_rule.png" width="65%" height="65%">
 
-<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/processing_rule.png" width="65%" height="65%">
+<img src="https://github.com/pinnace/burp-jwt-extension-images/blob/master/processing_rule.png" width="65%" height="65%">
 
-<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/invoke_processor.png" width="65%" height="65%">
+<img src="https://github.com/pinnace/burp-jwt-extension-images/blob/master/invoke_processor.png" width="65%" height="65%">
 
 
 
@@ -84,7 +84,7 @@ This fuzzer uses [jq's Object Identifier-Index](https://stedolan.github.io/jq/ma
 
 If you wanted to fuzz the `alg` field, you would use "Header" for your target selection and `.alg` as your selector
 
-<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/alg_selector.png" width="55%" height="55%">
+<img src="https://github.com/pinnace/burp-jwt-extension-images/blob/master/alg_selector.png" width="55%" height="55%">
 
 #### Selector Example: Selecting a nested claim
 
@@ -103,22 +103,22 @@ Say you want to fuzz _role_. You would use `.user.role` as your selector. If you
 
 ## Fuzzing examples
 
-### Example 1: Fuzzing for `None` type hashing
+### Example 1: Fuzzing for `None`
 
 Say you want to test if an application can be tricked into accepting `none` as a valid hashing algorithm. This vulnerability was originally discussed [here](https://auth0.com/blog/2015/03/31/critical-vulnerabilities-in-json-web-token-libraries/). You may want to try various permutations of none (e.g. `NoNe`, `nOne`, `noNe`, etc). Note that this is not the same as selecting 'None' as the Signature Algorithm.
 
 1. Use `.alg` as your selector
 2. Strip signature from your token
 
-<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/intruder_none_censored.png" width="55%" height="55%">
+<img src="https://github.com/pinnace/burp-jwt-extension-images/blob/master/intruder_none_censored.png" width="55%" height="55%">
 
 3. Add your payload list to Intruder
 
-<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/none_payload.png" width="75%" height="75%">
+<img src="https://github.com/pinnace/burp-jwt-extension-images/blob/master/none_payload.png" width="55%" height="55%">
 
 4. Run Intruder. One can see the [JSON Web Tokens](https://github.com/portswigger/json-web-tokens) extension is also handy here
 
-<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/none_intruder.png" width="55%" height="55%">
+<img src="https://github.com/pinnace/burp-jwt-extension-images/blob/master/none_intruder.png" width="55%" height="55%">
 
 
 ### Example 2: Algorithmic substitution
@@ -130,7 +130,7 @@ Say you want to test if an application is can be tricked into using a public key
 3. Select `HS256` as your signature algorithm
 4. Specify the path to the public key, or paste the key in the text box (be careful with `\n`s)
 
-<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/algorithmic_confusion.png" width="55%" height="55%">
+<img src="https://github.com/pinnace/burp-jwt-extension-images/blob/master/algorithmic_confusion.png" width="55%" height="55%">
 
 
 ### Example 3: `kid` claim fuzzing
@@ -149,21 +149,20 @@ To exploit this using the fuzzer you would do the following:
 4. Dump the known file contents into the **Signing Key** text field
 5. Hit save
 
-<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/kid_config.png" width="75%" height="75%">
+<img src="https://github.com/pinnace/burp-jwt-extension-images/blob/master/kid_config.png" width="75%" height="75%">
+
+Or
+
+<img src="https://github.com/pinnace/burp-jwt-extension-images/blob/master/kid_config2.png" width="75%" height="75%">
+
 
 6. Add your fuzz list
 
-<img src="https://github.com/cle0patra/burp-jwt-extension-images/blob/master/kid_payload.png" width="75%" height="75%">
+<img src="https://github.com/pinnace/burp-jwt-extension-images/blob/master/kid_payload.png" width="75%" height="75%">
 
 7. Run Intruder
 8. Victory dance
 
-## Tips and limitations
+## Issues or feature requests
 
-### Tip: `\n`
-
-If you find you are not getting expected results, try appending a line break character, `\n`, to your key (i.e. hit enter).
-
-### Limitations
-
-This fuzzer only handles one field at a time. Future iterations may include support for multiple fields.
+Please open an issue if you have encountered a bug or want to see additional features added.
