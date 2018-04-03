@@ -3,6 +3,8 @@ from burp import IIntruderPayloadProcessor
 from burp import ITab
 from burp import IBurpExtenderCallbacks
 from burp import IExtensionStateListener
+from java.io import PrintWriter
+from java.lang import RuntimeException
 
 
 from java.awt import Component;
@@ -45,16 +47,24 @@ import webbrowser
 from collections import OrderedDict
 from jwt.utils import *
 
-# Insets: https://docs.oracle.com/javase/7/docs/api/java/awt/Insets.html
-
-
 class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProcessor, ITab, IExtensionStateListener):
     def registerExtenderCallbacks( self, callbacks):
         self._helpers = callbacks.getHelpers()
-        callbacks.setExtensionName("JWT Fuzzer")
+        callbacks.setExtensionName("JWT FuzzHelper")
         callbacks.registerIntruderPayloadProcessor(self)
         callbacks.registerExtensionStateListener(self)
         
+        self._stdout = PrintWriter(callbacks.getStdout(), True)
+        self._stderr = PrintWriter(callbacks.getStderr(), True)
+
+        # Warn user if extension has not found pyjwt or rsa
+        did_import = lambda lib: True if lib in sys.modules else False
+        if not did_import("pyjwt"):
+            self._stdout.println("[WARNING] 'pyjwt' not found. Have you set your path correctly?")
+        if not did_import("rsa"):
+            self._stdout.println("[WARNING] 'rsa' not found. Have you set your path correctly?")
+
+        # Holds values passed by user from Configuration panel
         self._fuzzoptions = { 
                                 "target" : "Header", 
                                 "selector" : None, 
@@ -74,49 +84,6 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         gridBagLayout.rowWeights = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
         self._configurationPanel.setLayout(gridBagLayout)
 
-        # Help Panel
-        gridBagLayout = GridBagLayout()
-        gridBagLayout.columnWidths = [ 0, 0 ]
-        gridBagLayout.rowHeights = [ 10, 10 ]
-        gridBagLayout.columnWeights = [ 0.0, 0 ]
-        gridBagLayout.rowWeights = [0.0, 0 ]
-        """
-        #self._helpPanel = JPanel(BorderLayout())
-        topLabel = JLabel()
-        topLabel.setFont(Font("Lucida Grande", Font.BOLD, 18))
-        #topLabel.setText("JWT Fuzzer usage:")
-        topLabel.setText(helpText)
-
-        c = GridBagConstraints()
-        c.anchor = GridBagConstraints.FIRST_LINE_START
-        c.fill = GridBagConstraints.NONE
-        c.gridx = 0
-        c.gridy = 0
-        c.insets = Insets(0,10,0,10)
-        #self._helpPanel.add(topLabel,BorderLayout.PAGE_START)
-
-        targetHelpHeaderLabel = JLabel()
-        targetHelpHeaderLabel.setFont(Font("Lucida Grande", Font.BOLD, 14))
-        targetHelpHeaderLabel.setText("Target Selection:")
-        c = GridBagConstraints()
-        c.anchor = GridBagConstraints.FIRST_LINE_START
-        c.gridx = 0
-        c.gridy = 1
-        c.insets = Insets(0,10,0,10)
-        #self._helpPanel.add(targetHelpHeaderLabel,BorderLayout.LINE_START)
-
-        targetHelpLabel = JLabel()
-        targetHelpLabel.setFont(Font("Lucida Grande", Font.PLAIN, 12))
-        targetHelpLabel.setText(targetHelpText)
-        c = GridBagConstraints()
-        c.anchor = GridBagConstraints.FIRST_LINE_START
-        c.insets = Insets(0,10,0,10)
-        c.gridx = 0
-        c.gridy = 2
-        #self._helpPanel.add(targetHelpLabel,BorderLayout.PAGE_END)
-        """
-
-        
         # Setup tabs
         self._tabs = JTabbedPane()
         self._tabs.addTab('Configuration',self._configurationPanel)
@@ -258,7 +225,8 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         callbacks.customizeUiComponent(self._configurationPanel)
         callbacks.customizeUiComponent(self._tabs)
         callbacks.addSuiteTab(self)
-        print "Loaded successfully"
+
+        self._stdout.println("[JWT FuzzHelper] Loaded successfully")
         return
 
 
@@ -290,10 +258,9 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         try:
             header_dict = json.loads(decoded_header, object_pairs_hook=OrderedDict)
         except ValueError:
-            print "Failed to decode header!"
-            return
+            raise RuntimeException("[JWT FuzzHelper] Error: ValueError. Failed to decode header!")
         except Exception as e:
-            print "Exception: ",e.message
+            self._stderr.println("[ERROR] Encountered an unknown error when decoding header:\n{}\nCarrying on...".format(e))
 
         # Decode payload
         # Payload does not have to be a JSON object.
@@ -305,7 +272,7 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
             payload_is_string = True
             payload_dict = decoded_payload
         except Exception as e:
-            print "Exception: ",e.message
+            self._stderr.println("[ERROR] Encountered an unknown error when decoding payload:\n{}\nCarrying on...".format(e))
 
         target = header_dict if self._fuzzoptions["target"] == "Header" else payload_dict
         selector = self._fuzzoptions["selector"]
@@ -314,7 +281,7 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         # value specified by the selector, 
         # if this value does not exist, assume the user
         # wants to add the value that would have been specified
-        # by the selector to the dictionary (this behavior will 
+        # by the selector to the desired JWT segment (this behavior will 
         # be noted in the help docs)
 
         intruderPayload = self._helpers.bytesToString(currentPayload)
@@ -335,6 +302,9 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
             target = target_string if payload_is_string else json.loads(target_string, object_pairs_hook=OrderedDict)
             if self._fuzzoptions["target"] == "Payload":
                 payload_dict = target
+            else:
+                header_dict = target
+                
 
         algorithm = self._fuzzoptions["algorithm"]
         if self._fuzzoptions["signature"]: 
@@ -365,7 +335,6 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
                 else:
                     hmac_algorithm = hashlib.sha512
             
-                print "Using algorithm: ",algorithm
                 signature = self._helpers.base64Encode(
                             hmac.new(
                                     key, contents, hmac_algorithm
@@ -374,7 +343,7 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
 
                 modified_jwt = contents + "." +signature
 
-            # JWT can't sign non-JSON payloads. WTF.
+            # JWT can't sign non-JSON payloads. WTF. This block is for non-JSON payloads.
             elif algorithm.startswith("RS") and payload_is_string:
                 if algorithm == "RS256":
                     rsa_algorithm = "SHA-256"
@@ -386,7 +355,6 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
                 signature = rsa.sign(contents,privkey,rsa_algorithm)
                 signature = base64.b64encode(signature).encode('utf-8').replace("=", "")
                 modified_jwt = contents + "." + signature
-                print "RSA sig: ",signature
             else:
                 # Use pyjwt when using asymmetric alg
                 if algorithm == "none":
@@ -467,7 +435,7 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
     #-----------------------
 
     def getTabCaption(self):
-        return "JWT Fuzzer"
+        return "JWT FuzzHelper"
 
     def getUiComponent(self):
         return self._tabs
@@ -477,7 +445,6 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
     #---------------------------
 
     def saveOptions(self,event):
-        print "Saving! "
         self._fuzzoptions["target"]     = self._targetComboBox.getSelectedItem()
         self._fuzzoptions["selector"]   = self._selectorTextField.getText()
         self._fuzzoptions["signature"]  = True if self._generateSignatureComboBox.getSelectedItem() == "True" else False
@@ -486,7 +453,7 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         if self._fromFileCheckBox.isSelected():
             filename = self._fromFileTextField.getText()
             if os.path.isdir(filename):
-                print "{} is a directory".format(filename)
+                self._stderr.println("{} is a directory".format(filename))
                 return
             if os.path.exists(filename):
                 with open(filename, 'rb') as f:
@@ -496,7 +463,7 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         # RSA keys need to end with a line break. Many headaches because of this.
         if not self._fuzzoptions["key"].endswith("\n") and self._fuzzoptions["algorithm"].startswith("RS"):
             self._fuzzoptions["key"] += "\n"
-        print self._fuzzoptions
+        self._stdout.println("[JWT FuzzHelper] Saved options:\n{}".format(self._fuzzoptions))
 
 
         # Sanity check selector if it's not a regular expression
@@ -507,9 +474,7 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
                 self._saveButton.setText("Invalid JSON Selector!")
             else:
                 self._fuzzoptions["selector"] = self._fuzzoptions["selector"].split(".")[1:]
-                print "Selector: ",self._fuzzoptions["selector"]
                 self._saveButton.setText("Saved!")
-                #self._saveButton.setText("Save Configuration")
         # Sanity check the regular expression
         else:
             try:
@@ -536,7 +501,7 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
 
     def regexSelector(self,event):
         if self._regexCheckBox.isSelected():
-            self._selectorLabel.setText("JSON Selector [Regex] (Required): ")
+            self._selectorLabel.setText("Selector [Regex] (Required): ")
         else:
             self._selectorLabel.setText("JSON Selector [Object Identifier-Index Syntax] (Required): ")
         self._configurationPanel.repaint()
@@ -554,11 +519,11 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         self._helpPopup.setContentPane(helpPanel)
         helpHeadingText = JLabel("<html><h2>JWT Fuzzer</h2></html>")
         authorText = JLabel("<html><p>@author: Lukas Stephan &lt;pinnace&gt;</p></html>")
-        aboutText = JLabel("<html><br /> <p>This extension adds an Intruder payload processor for JWTs.</p></html>")
+        aboutText = JLabel("<html><br /> <p>This extension adds an Intruder payload processor for JWTs.</p><br /></html>")
         repositoryText = JLabel("<html>Documentation and source code:</html>")
-        repositoryLink = JLabel("<html>- <a href=\"https://github.com/cle0patra/burp-jwt-extension\">https://github.com/cle0patra/burp-jwt-extension</a></html>")
+        repositoryLink = JLabel("<html>- <a href=\"https://github.com/pinnace/burp-jwt-fuzzhelper-extension\">https://github.com/pinnace/burp-jwt-fuzzhelper-extension</a></html>")
         licenseText = JLabel("<html><br/><p>JWT Fuzzer uses a GPL 3 license. This license does not apply to the dependency below:<p></html>") 
-        dependencyLink = JLabel("<html>- <a href=\"https://github.com/jpadilla/pyjwt/blob/master/LICENSE\">Auth0 pyjwt</a></html>")
+        dependencyLink = JLabel("<html>- <a href=\"https://github.com/jpadilla/pyjwt/blob/master/LICENSE\">pyjwt</a></html>")
         dependencyLink.addMouseListener(ClickListener())
         dependencyLink.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR))
         repositoryLink.addMouseListener(ClickListener())
@@ -576,13 +541,14 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         self._helpPopup.pack()
         self._helpPopup.setLocationRelativeTo(None)
         self._helpPopup.setVisible(True)
+        return
 
 class ClickListener(MouseAdapter):
     def mousePressed(self, event):
-        print "Mouse pressed"
         labelText = event.source.text
         hrefBeginIndex = labelText.index("href=\"")
         hrefEndIndex = labelText.index("\">")
         link = labelText[hrefBeginIndex+6:hrefEndIndex]
         webbrowser.open(link)
+        return
 
