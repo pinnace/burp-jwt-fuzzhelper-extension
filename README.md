@@ -16,8 +16,9 @@ Example use cases may include:
 3. Easily iterating over a large set of payload claim values if, for example, one has obtained a signing key
 4. Inserting bogus or unusually encoded strings or bad inputs. For example, those in the [Big List of Naughty Strings](https://github.com/minimaxir/big-list-of-naughty-strings)
 5. Manipulation of timestamps or expirations in `iat`, `exp`, etc...
-6. Testing for denial of service conditions.
-7. Classic attacks like testing for `none` type signatures, algorithmic substitution, etc...
+6. Fuzzing site specific implementations of `kid`.
+7. Testing for denial of service conditions.
+8. Classic attacks like testing for `none` type signatures, algorithmic substitution, etc...
 
 This extension will also process JWT tokens that do not have JSON encoded payloads, which, while uncommon, is something other extensions have may have overlooked.
 
@@ -166,4 +167,4 @@ Or
 
 ## Issues or feature requests
 
-PRs welcome. Please open an issue if you have encountered a bug or want to see additional features added. Currently, the fuzzer only supports fuzzing a single claim at a time. If there is interest in supporting functions like [Cluster Bomb](https://portswigger.net/burp/help/intruder_positions) intruder positions, I may consider adding. I am also exploring adding an IScannerInsertionPoint for the active scanner.
+PRs welcome. Please open an issue if you have encountered a bug or want to see additional features added. Currently, the fuzzer only supports fuzzing a single claim at a time. If there is interest in supporting functions like [Pitchfork](https://portswigger.net/burp/help/intruder_positions) intruder positions, I may consider adding. I am also exploring adding an IScannerInsertionPoint for the active scanner.
