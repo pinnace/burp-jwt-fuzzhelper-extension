@@ -12,11 +12,12 @@ JSON Web Token (JWT) support for Burp Intruder. This extension adds a payload pr
 
 Example use cases may include:
 1. Inserting atypical values for common claims
-2. Inserting a new claim that may be processed by the application before signature validation
+2. Inserting a new claim that may be processed by the application before signature validation 
 3. Easily iterating over a large set of payload claim values if, for example, one has obtained a signing key
 4. Inserting bogus or unusually encoded strings or bad inputs. For example, those in the [Big List of Naughty Strings](https://github.com/minimaxir/big-list-of-naughty-strings)
 5. Manipulation of timestamps or expirations in `iat`, `exp`, etc...
-6. Classic attacks like testing for `none` type signatures, algorithmic substitution, etc...
+6. Testing for denial of service conditions.
+7. Classic attacks like testing for `none` type signatures, algorithmic substitution, etc...
 
 This extension will also process JWT tokens that do not have JSON encoded payloads, which, while uncommon, is something other extensions have may have overlooked.
 
@@ -45,7 +46,7 @@ Extender -> Extensions -> Add -> Type: Python -> Load `burp-jwt-fuzzhelper.py`
 
 ### **Important**
 
-1. You must **disable** payload encoding for the `.` character in Intruder options, or they will be URL encoded.
+1. You must **disable** payload encoding for the `.` character in Intruder options, or the JWT delimiters will be URL encoded.
 
 <img src="https://github.com/pinnace/burp-jwt-extension-images/blob/master/payload_encoding.png" width="75%" height="75%">
 
@@ -76,8 +77,8 @@ This fuzzer uses [jq's Object Identifier-Index](https://stedolan.github.io/jq/ma
 3. `Use regex as JSON selector`: As stated, optionally use a regex.
 4. `Generate Signature`: Whether or not to generate a signature
 5. `Signature Algorithm`: If `Generate Signature` is True, then use this algorithm
-6. `Signing Key` : Optional signing key to paste
-7. `Signing Key From File`: Optionally load key from file. If selected, option `Path to Signing Key` will appear. Useful if key is raw bytes.
+6. `Signing Key` : Optional signing key to paste. If using RS, ES, or PS family of algorithms, this key must be a valid signing key.
+7. `Signing Key From File`: Optionally load key from file. If selected, option `Path to Signing Key` will appear. Useful if key is raw bytes and generally more reliable. Recommended.
 8. `Path to Signing Key`: Path to file with the signing key. If using RS, ES, or PS family of algorithms, this key must be a valid signing key. 
 
 #### Selector Example: Selecting `alg`
@@ -105,7 +106,7 @@ Say you want to fuzz _role_. You would use `.user.role` as your selector. If you
 
 ### Example 1: Fuzzing for `None`
 
-Say you want to test if an application can be tricked into accepting `none` as a valid hashing algorithm. This vulnerability was originally discussed [here](https://auth0.com/blog/2015/03/31/critical-vulnerabilities-in-json-web-token-libraries/). You may want to try various permutations of none (e.g. `NoNe`, `nOne`, `noNe`, etc). Note that this is not the same as selecting 'None' as the Signature Algorithm.
+Say you want to test if an application can be tricked into accepting `none` as a valid hashing algorithm. This vulnerability was originally discussed [here](https://auth0.com/blog/2015/03/31/critical-vulnerabilities-in-json-web-token-libraries/). You may want to try various permutations of none (e.g. `NoNe`, `nOne`, `noNe`, etc). Note that this is not the same as selecting 'None' as the Signature Algorithm, which will simply use `pyjwt`.
 
 1. Use `.alg` as your selector
 2. Strip signature from your token
@@ -165,4 +166,4 @@ Or
 
 ## Issues or feature requests
 
-Please open an issue if you have encountered a bug or want to see additional features added.
+PRs welcome. Please open an issue if you have encountered a bug or want to see additional features added. Currently, the fuzzer only supports fuzzing a single claim at a time. If there is interest in supporting functions like [Cluster Bomb](https://portswigger.net/burp/help/intruder_positions) intruder positions, I may consider adding. I am also exploring adding an IScannerInsertionPoint for the active scanner.
