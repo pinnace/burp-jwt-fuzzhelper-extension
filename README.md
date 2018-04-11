@@ -12,7 +12,7 @@ JSON Web Token (JWT) support for Burp Intruder. This extension adds a payload pr
 
 Example use cases may include:
 1. Inserting atypical values for common claims
-2. Inserting a new claim that may be processed by the application before signature validation 
+2. Inserting a new claim that may be processed by the application before signature validation (e.g. [CVE-2018-0114](https://www.exploit-db.com/exploits/44324/))
 3. Easily iterating over a large set of payload claim values if, for example, one has obtained a signing key
 4. Inserting bogus or unusually encoded strings or bad inputs. For example, those in the [Big List of Naughty Strings](https://github.com/minimaxir/big-list-of-naughty-strings)
 5. Manipulation of timestamps or expirations in `iat`, `exp`, etc...
@@ -73,7 +73,7 @@ This fuzzer uses [jq's Object Identifier-Index](https://stedolan.github.io/jq/ma
 
 1. `Target Selection`: Select either the Header or the Payload portion of a JWT to fuzz
 2. `JSON Selector`: Specify a filter using [jq's Object Identifier-Index](https://stedolan.github.io/jq/manual/#Basicfilters) (e.g. `.user.role`) or a regex depending on whether `Use regex as JSON selector` is checked.
-  - For Object Identifier-Index selectors, a single `.` is an empty selector. If this claim does not exist, it will be created.
+  - For Object Identifier-Index selectors, a single `.` is an empty selector. If the selector is not empty and this claim does not exist, it will be created.
   - For regular expressions, the regex is passed to [`re.sub`](https://docs.python.org/2/library/re.html#re.sub). An empty selector is no character.
 3. `Use regex as JSON selector`: As stated, optionally use a regex.
 4. `Generate Signature`: Whether or not to generate a signature
@@ -125,7 +125,7 @@ Say you want to test if an application can be tricked into accepting `none` as a
 
 ### Example 2: Algorithmic substitution
 
-Say you want to test if an application is can be tricked into using a public key as an HMAC key.
+Say you want to test if an application can be tricked into using a public key as an HMAC key.
 
 1. Use an empty selector `.`, or try fuzzing another claim (e.g. Payload -> `.user.name`) to see if your attack has been successful.
 2. Set `Generate Signature` to True
