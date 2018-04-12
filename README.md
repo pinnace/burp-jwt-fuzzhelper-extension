@@ -6,7 +6,7 @@ JSON Web Token (JWT) support for Burp Intruder. This extension adds a payload pr
 
 ## Comparison
 
-[JOSEPH](https://github.com/portswigger/json-web-token-attacker) and [JSON Web Tokens](https://github.com/portswigger/json-web-tokens) extensions are two from Portswigger that automate some common attacks and provide various views for JWTs. This  extension complements those by providing a novel Intruder hook for more targeted fuzzing and on-the-fly manipulation of JWTs.
+[JOSEPH](https://github.com/portswigger/json-web-token-attacker) and [JSON Web Tokens](https://github.com/portswigger/json-web-tokens) extensions are two extensions that automate some common attacks and provide various views for JWTs. This  extension complements those by providing a novel Intruder hook for more targeted fuzzing and on-the-fly manipulation of JWTs.
 
 ## Use Cases
 
@@ -26,7 +26,7 @@ This extension will also process JWT tokens that do not have JSON encoded payloa
 
 This extension requires you to have Jython installed.
 
-The HS* class of signature algorithms (ie. HS256, HS384, and HS512) are implemented using native Python libraries. The RS*, ES*, PS*, and None class of signatures are generated via the [pyjwt](https://pyjwt.readthedocs.io/en/latest/) and [rsa](https://pypi.python.org/pypi/rsa) libraries. You do not have to have `pyjwt` or `rsa` installed unless you wish to use these families of algorithms. Since pyjwt relies on Python `cryptography` libs and these libs cannot be installed via Jython, you will need to specify a folder for loading additional Python modules in Extender -> Options -> Python Environment. If you are not planning on making use of ES*, RS*, or PS* algorithms, you do not need `pyjwt` or `rsa`. You can find the location of your libraries with the command `python -c "import sys; print sys.path;"`.
+The HS* class of signature algorithms (ie. HS256, HS384, and HS512) are implemented using native Python libraries. The RS*, ES*, PS*, and None class of signatures are generated via the [pyjwt](https://pyjwt.readthedocs.io/en/latest/) and [rsa](https://pypi.python.org/pypi/rsa) libraries. Since pyjwt relies on Python `cryptography` libs and these libs cannot be installed via Jython, you will need to specify a folder for loading additional Python modules in Extender -> Options -> Python Environment. If you are not planning on making use of ES*, RS*, or PS* algorithms, you do not need `pyjwt` or `rsa`. You can find the location of your libraries with the command `python -c "import sys; print sys.path;"`.
 
 ## Installation
 
