@@ -6,7 +6,7 @@ JSON Web Token (JWT) support for Burp Intruder. This extension adds a payload pr
 
 ## Comparison
 
-[JOSEPH](https://github.com/portswigger/json-web-token-attacker) and [JSON Web Tokens](https://github.com/portswigger/json-web-tokens) extensions are two extensions that automate some common attacks and provide various views for JWTs. This  extension complements those by providing a novel Intruder hook for more targeted fuzzing and on-the-fly manipulation of JWTs.
+[JOSEPH](https://github.com/portswigger/json-web-token-attacker) and [JSON Web Tokens](https://github.com/portswigger/json-web-tokens) are two extensions that automate some common attacks and provide various views for JWTs. This  extension complements those by providing an Intruder hook for more targeted fuzzing and on-the-fly manipulation of JWTs.
 
 ## Use Cases
 
@@ -168,3 +168,5 @@ Or
 ## Issues or feature requests
 
 PRs welcome. Please open an issue if you have encountered a bug or want to see additional features added. Currently, the fuzzer only supports fuzzing a single claim at a time. If there is interest in supporting functions like [Pitchfork](https://portswigger.net/burp/help/intruder_positions) intruder positions, I may consider adding. I am also exploring adding an IScannerInsertionPoint for the active scanner.
+
+This extension has been submitted to Portswigger for inclusion in the BApp store pending review.
