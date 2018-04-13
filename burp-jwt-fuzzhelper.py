@@ -518,7 +518,7 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         helpPanel.setLayout(BoxLayout(helpPanel, BoxLayout.Y_AXIS))
         self._helpPopup.setContentPane(helpPanel)
         helpHeadingText = JLabel("<html><h2>JWT Fuzzer</h2></html>")
-        authorText = JLabel("<html><p>@author: Lukas Stephan &lt;pinnace&gt;</p></html>")
+        authorText = JLabel("<html><p>@author: &lt;pinnace&gt;</p></html>")
         aboutText = JLabel("<html><br /> <p>This extension adds an Intruder payload processor for JWTs.</p><br /></html>")
         repositoryText = JLabel("<html>Documentation and source code:</html>")
         repositoryLink = JLabel("<html>- <a href=\"https://github.com/pinnace/burp-jwt-fuzzhelper-extension\">https://github.com/pinnace/burp-jwt-fuzzhelper-extension</a></html>")
