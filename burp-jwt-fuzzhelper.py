@@ -33,7 +33,10 @@ from javax.swing import JTextField;
 from javax.swing import JTextArea;
 from javax.swing import JFrame;
 from javax.swing.border import EmptyBorder;
-import jwt
+try:
+    import jwt
+except ImportError:
+    print "[WARNING] module 'jwt' from pyjwt not found."
 import hashlib
 import hmac
 import md5
