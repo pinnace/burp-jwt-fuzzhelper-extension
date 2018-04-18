@@ -39,7 +39,10 @@ import hmac
 import md5
 import base64
 import re
-import rsa
+try:
+    import rsa
+except ImportError:
+    print "[WARNING] module 'rsa' not found."
 import json
 import time
 import pyasn1
@@ -56,13 +59,6 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         
         self._stdout = PrintWriter(callbacks.getStdout(), True)
         self._stderr = PrintWriter(callbacks.getStderr(), True)
-
-        # Warn user if extension has not found pyjwt or rsa
-        did_import = lambda lib: True if lib in sys.modules else False
-        if not did_import("pyjwt"):
-            self._stdout.println("[WARNING] 'pyjwt' not found. Have you set your path correctly?")
-        if not did_import("rsa"):
-            self._stdout.println("[WARNING] 'rsa' not found. Have you set your path correctly?")
 
         # Holds values passed by user from Configuration panel
         self._fuzzoptions = { 
