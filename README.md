@@ -46,7 +46,7 @@ Extender -> Extensions -> Add -> Type: Python -> Load `burp-jwt-fuzzhelper.py`
 
 The `pyjwt` libs rely on C extensions that cannot be installed via Jython. Users need to specify an external path for loading modules.
 
-After finding your environment paths with `python -c "import sys; print sys.path;"`, locate pyjwt. On Kali this is usually in 
+After finding your environment import paths with `python -c "import sys; print sys.path;"`, locate pyjwt. On Kali this is usually in 
 some folder named `dist-packages`, on Macs in `site-packages`. You can confirm by grepping for the module (e.g. `ls /usr/lib/python2.7/dist-packages/ | grep -i pyjwt`.
 
 Refer to [this issue](https://github.com/pinnace/burp-jwt-fuzzhelper-extension/issues/3) if you are having problems.
