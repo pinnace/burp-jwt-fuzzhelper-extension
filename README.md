@@ -88,7 +88,8 @@ This fuzzer uses [jq's Object Identifier-Index](https://stedolan.github.io/jq/ma
 5. `Signature Algorithm`: If `Generate Signature` is True, then use this algorithm
 6. `Signing Key` : Optional signing key to paste. If using RS, ES, or PS family of algorithms, this key must be a valid signing key.
 7. `Signing Key From File`: Optionally load key from file. If selected, option `Path to Signing Key` will appear. Useful if key is raw bytes and generally more reliable. Recommended.
-8. `Path to Signing Key`: Path to file with the signing key. If using RS, ES, or PS family of algorithms, this key must be a valid signing key. 
+8. `Signing Key From Command`: Optionally obtain key from external comand. If selected, option `Path to Signing Cmd` will appear. Useful if signing process is not standard or not supported. The command should expect only `encoded(header).encoded(payload)` string as an argument and print base64-encoded key to standard output.
+9. `Path to Signing Key`: Path to file with the signing key. If using RS, ES, or PS family of algorithms, this key must be a valid signing key.
 
 #### Selector Example: Selecting `alg`
 
