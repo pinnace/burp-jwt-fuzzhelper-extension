@@ -52,6 +52,7 @@ import pyasn1
 import webbrowser
 from collections import OrderedDict
 from jwt.utils import *
+from subprocess import check_output
 
 class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProcessor, ITab, IExtensionStateListener):
     def registerExtenderCallbacks( self, callbacks):
@@ -69,7 +70,8 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
                                 "selector" : None, 
                                 "signature" : False,
                                 "algorithm" : "HS256",
-                                "key" : ""
+                                "key" : "",
+                                "key_cmd" : ""
                             }
 
         self._isNone = lambda val: isinstance(val, type(None))
@@ -78,9 +80,9 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         self._configurationPanel = JPanel()
         gridBagLayout = GridBagLayout()
         gridBagLayout.columnWidths = [ 0, 0, 0]
-        gridBagLayout.rowHeights = [ 10, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+        gridBagLayout.rowHeights = [ 10, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
         gridBagLayout.columnWeights = [ 0.0, 0.0, 0.0 ]
-        gridBagLayout.rowWeights = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+        gridBagLayout.rowWeights = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
         self._configurationPanel.setLayout(gridBagLayout)
 
         # Setup tabs
@@ -212,11 +214,29 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         c.anchor = GridBagConstraints.FIRST_LINE_START
         self._configurationPanel.add(self._fromFileCheckBox,c)
 
+        self._fromCmdTextField = JTextField('',50)
+
+        fromCmdLabel = JLabel("Signing key from command? (Optional): ")
+        fromCmdLabel.setFont(Font("Tahoma",Font.BOLD, 12))
+        c = GridBagConstraints()
+        c.gridx = 0
+        c.gridy = 8
+        c.insets = Insets(0,0,0,0)
+        c.anchor = GridBagConstraints.LINE_END
+        self._configurationPanel.add(fromCmdLabel,c)
+
+        self._fromCmdCheckBox = JCheckBox("", actionPerformed=self.fromCmd)
+        c = GridBagConstraints()
+        c.gridx = 1
+        c.gridy = 8
+        c.anchor = GridBagConstraints.FIRST_LINE_START
+        self._configurationPanel.add(self._fromCmdCheckBox,c)
+
         self._saveButton = JButton("Save Configuration", actionPerformed=self.saveOptions)
         self._saveButton.setText("Save Configuration")
         c = GridBagConstraints()
         c.gridx = 1
-        c.gridy = 8
+        c.gridy = 9
         c.anchor = GridBagConstraints.FIRST_LINE_START
         self._configurationPanel.add(self._saveButton,c)
 
@@ -323,7 +343,13 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         contents = header + "." + payload
         
         key = self._fuzzoptions["key"]
-        if self._fuzzoptions["signature"]:
+
+        if len(self._fuzzoptions["key_cmd"]) > 0:
+            # we provide 'contents' value as an only argument to key-generating command
+            # it is expected that the command will print only the signature
+            signature = check_output([self._fuzzoptions["key_cmd"], contents])
+            modified_jwt = contents + "." + signature
+        elif self._fuzzoptions["signature"]:
             # pyjwt throws error when using a public key in symmetric alg (for good reason of course),
             # must do natively to support algorithmic sub attacks
             if algorithm.startswith("HS"):
@@ -425,6 +451,12 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         c.gridx = 1
         c.gridy = 6
         self._configurationPanel.add(self._fromFileTextField, c)
+
+    def addSigningKeyFromCmdTextField(self):
+        c = GridBagConstraints()
+        c.gridx = 1
+        c.gridy = 6
+        self._configurationPanel.add(self._fromCmdTextField, c)
     #-----------------------
     # End Helpers
     #-----------------------
@@ -448,6 +480,7 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         self._fuzzoptions["selector"]   = self._selectorTextField.getText()
         self._fuzzoptions["signature"]  = True if self._generateSignatureComboBox.getSelectedItem() == "True" else False
         self._fuzzoptions["algorithm"]  = self._algorithmSelectionComboBox.getSelectedItem()
+        self._fuzzoptions["key_cmd"]    = ""
         
         if self._fromFileCheckBox.isSelected():
             filename = self._fromFileTextField.getText()
@@ -457,6 +490,8 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
             if os.path.exists(filename):
                 with open(filename, 'rb') as f:
                     self._fuzzoptions["key"] = f.read()
+        elif self._fromCmdCheckBox.isSelected():
+            self._fuzzoptions["key_cmd"] = self._fromCmdTextField.getText()
         else:
             self._fuzzoptions["key"]    = unicode(self._signingKeyTextArea.getText()).encode("utf-8")
         # RSA keys need to end with a line break. Many headaches because of this.
@@ -494,6 +529,18 @@ class BurpExtender(IBurpExtender, IBurpExtenderCallbacks, IIntruderPayloadProces
         else:
             self._signingKeyLabel.setText("Signing Key (Optional): ")
             self._configurationPanel.remove(self._fromFileTextField)
+            self.addSigningKeyTextArea()
+        self._configurationPanel.repaint()
+        return
+
+    def fromCmd(self,event):
+        if self._fromCmdCheckBox.isSelected():
+            self._signingKeyLabel.setText("Path to Signing Cmd (Optional): ")
+            self._configurationPanel.remove(self._signingKeyScrollPane)
+            self.addSigningKeyFromCmdTextField()
+        else:
+            self._signingKeyLabel.setText("Signing Key (Optional): ")
+            self._configurationPanel.remove(self._fromCmdTextField)
             self.addSigningKeyTextArea()
         self._configurationPanel.repaint()
         return
